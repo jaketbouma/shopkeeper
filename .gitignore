@@ -1,0 +1,7 @@
+.pulumi
+.idea/
+**/dist
+venv
+*.tar.gz
+**/__pycache__
+.vscode

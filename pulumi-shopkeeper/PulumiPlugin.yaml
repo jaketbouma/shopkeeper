@@ -1,0 +1,7 @@
+name: Shopkeeper
+description: Data producers, data consumers and datasets as infra
+runtime:
+  name: python
+  options:
+    toolchain: poetry
+version: 0.0.0

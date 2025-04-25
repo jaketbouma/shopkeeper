@@ -1,0 +1,7 @@
+{
+    "python.testing.pytestArgs": [],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
+    "python.testing.cwd": "/workspaces/shopkeeper/pulumi-shopkeeper",
+    "python.defaultInterpreterPath": "/workspaces/shopkeeper/pulumi-shopkeeper/.venv/bin/python"
+}
