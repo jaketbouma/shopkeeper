@@ -1,0 +1,17 @@
+name: my_marketplace
+runtime: yaml
+description: Vegetables?
+
+packages:
+  pulumi-shopkeeper:
+    source: ../pulumi-shopkeeper
+    version: 0.0.0
+
+resources:
+  veg_market:
+    type: pulumi-shopkeeper:Marketplace
+    properties:
+      speciality: Vegetables
+
+outputs:
+  veg_billboard: ${veg_market.billboard}
