@@ -8,10 +8,16 @@ packages:
     version: 0.0.0
 
 resources:
-  veg_market:
+  vegMarket:
     type: pulumi-shopkeeper:Marketplace
     properties:
-      speciality: Vegetables
+      speciality: vegetables
+      address: playgroundville
+
+  tomatoProducer:
+    type: pulumi-shopkeeper:Producer
+    properties:
+      marketplaceAddress: ${vegMarket.address}
 
 outputs:
-  veg_billboard: ${veg_market.billboard}
+  vegBillboard: ${vegMarket.billboard}

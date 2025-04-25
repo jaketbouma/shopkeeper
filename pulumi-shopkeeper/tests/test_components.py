@@ -18,7 +18,7 @@ def example_marketplace():
     old_settings = pulumi.runtime.settings.SETTINGS
     try:
         pulumi.runtime.mocks.set_mocks(MyMocks())
-        from shopkeeper.shopkeeper import Marketplace, MarketplaceArgs
+        from shopkeeper.components import Marketplace, MarketplaceArgs
 
         yield Marketplace("test", MarketplaceArgs())
     finally:
