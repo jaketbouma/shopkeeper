@@ -21,3 +21,4 @@ resources:
 
 outputs:
   vegBillboard: ${vegMarket.billboard}
+  vegMarketUrn: ${vegMarket}.urn

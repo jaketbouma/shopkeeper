@@ -9,22 +9,6 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-@pytest.fixture
-def example_marketplace():
-    loop = asyncio.get_event_loop()
-    # bypass multithreading for now
-    loop.set_default_executor(ImmediateExecutor())
-
-    old_settings = pulumi.runtime.settings.SETTINGS
-    try:
-        pulumi.runtime.mocks.set_mocks(MyMocks())
-        from shopkeeper.components import Marketplace, MarketplaceArgs
-
-        yield Marketplace("test", MarketplaceArgs())
-    finally:
-        pulumi.runtime.settings.configure(old_settings)
-        loop.set_default_executor(ThreadPoolExecutor())
-
 
 class MyMocks(pulumi.runtime.Mocks):
     def new_resource(self, args: pulumi.runtime.MockResourceArgs):
@@ -68,6 +52,46 @@ class ImmediateExecutor(ThreadPoolExecutor):
         return x
 
 
+@pytest.fixture
+def example_marketplace():
+    loop = asyncio.get_event_loop()
+    # bypass multithreading for now
+    loop.set_default_executor(ImmediateExecutor())
+
+    old_settings = pulumi.runtime.settings.SETTINGS
+    try:
+        pulumi.runtime.mocks.set_mocks(MyMocks())
+        from shopkeeper.components import Marketplace, MarketplaceArgs
+
+        yield Marketplace("testmarketplace", MarketplaceArgs(
+            speciality="Sneakers",
+            address="Sneakertown 1"
+            )
+        )
+    finally:
+        pulumi.runtime.settings.configure(old_settings)
+        loop.set_default_executor(ThreadPoolExecutor())
+
+
+@pytest.fixture
+def example_producer(example_marketplace):
+    loop = asyncio.get_event_loop()
+    # bypass multithreading for now
+    loop.set_default_executor(ImmediateExecutor())
+
+    old_settings = pulumi.runtime.settings.SETTINGS
+    try:
+        pulumi.runtime.mocks.set_mocks(MyMocks())
+        from shopkeeper.components import Producer, ProducerArgs
+
+        yield Producer("testproducer", ProducerArgs(
+            marketplaceAddress=example_marketplace.address),
+            marketplace=example_marketplace
+        )
+    finally:
+        pulumi.runtime.settings.configure(old_settings)
+        loop.set_default_executor(ThreadPoolExecutor())
+
 @pulumi.runtime.test
 def test_marketplace(example_marketplace):
     """
@@ -77,4 +101,10 @@ def test_marketplace(example_marketplace):
         assert 1==1
 
     #return example_marketplace.something.apply(check_marketplace)
+    return
+
+@pulumi.runtime.test
+def test_producer(example_producer):
+    def check_producer():
+        assert 1==1
     return
