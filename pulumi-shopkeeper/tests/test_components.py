@@ -9,15 +9,11 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-
 class MyMocks(pulumi.runtime.Mocks):
     def new_resource(self, args: pulumi.runtime.MockResourceArgs):
         if args.typ == "pulumi-shopkeeper:index:Marketplace":
             # really not sure where these mocks end up :/
-            outputs = dict(
-                banana="yellow",
-                **args.inputs
-            )
+            outputs = dict(banana="yellow", **args.inputs)
             logger.info(outputs)
             return [args.name + "_id", outputs]
         return [args.name + "_id", args.inputs]
@@ -63,10 +59,11 @@ def example_marketplace():
         pulumi.runtime.mocks.set_mocks(MyMocks())
         from shopkeeper.components import Marketplace, MarketplaceArgs
 
-        yield Marketplace("testmarketplace", MarketplaceArgs(
-            speciality="Sneakers",
-            address="Sneakertown 1"
-            )
+        yield Marketplace(
+            "testmarketplace",
+            MarketplaceArgs(
+                speciality="Sneakers", address="Sneakertown 1", backend="AWS"
+            ),
         )
     finally:
         pulumi.runtime.settings.configure(old_settings)
@@ -84,27 +81,32 @@ def example_producer(example_marketplace):
         pulumi.runtime.mocks.set_mocks(MyMocks())
         from shopkeeper.components import Producer, ProducerArgs
 
-        yield Producer("testproducer", ProducerArgs(
-            marketplaceAddress=example_marketplace.address),
-            marketplace=example_marketplace
+        yield Producer(
+            "testproducer",
+            ProducerArgs(marketplaceAddress=example_marketplace.address),
+            marketplace=example_marketplace,
         )
     finally:
         pulumi.runtime.settings.configure(old_settings)
         loop.set_default_executor(ThreadPoolExecutor())
+
 
 @pulumi.runtime.test
 def test_marketplace(example_marketplace):
     """
     Check the marketplace resource
     """
-    def check_marketplace(index_content):
-        assert 1==1
 
-    #return example_marketplace.something.apply(check_marketplace)
+    def check_marketplace(index_content):
+        assert 1 == 1
+
+    # return example_marketplace.something.apply(check_marketplace)
     return
+
 
 @pulumi.runtime.test
 def test_producer(example_producer):
     def check_producer():
-        assert 1==1
+        assert 1 == 1
+
     return

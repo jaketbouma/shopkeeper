@@ -13,6 +13,7 @@ resources:
     properties:
       speciality: vegetables
       address: playgroundville
+      backend: AWS
 
   tomatoProducer:
     type: pulumi-shopkeeper:Producer
@@ -21,4 +22,5 @@ resources:
 
 outputs:
   vegBillboard: ${vegMarket.billboard}
-  vegMarketUrn: ${vegMarket}.urn
+  vegMarketUrn: ${vegMarket.urn}
+  vegMarketMetadata: ${vegMarket.metadata}
