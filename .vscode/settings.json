@@ -3,5 +3,13 @@
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
     "python.testing.cwd": "/workspaces/shopkeeper/pulumi-shopkeeper",
-    "python.defaultInterpreterPath": "/workspaces/shopkeeper/pulumi-shopkeeper/.venv/bin/python"
+    "python.defaultInterpreterPath": "/workspaces/shopkeeper/pulumi-shopkeeper/.venv/bin/python",
+    "editor.codeActionsOnSave": {
+        "source.organizeImports": "explicit"
+    },
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.black-formatter",
+        "editor.formatOnSave": true
+    },
+    "isort.args":["--profile", "black"]
 }
