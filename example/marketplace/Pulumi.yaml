@@ -9,7 +9,7 @@ packages:
 
 resources:
   market:
-    type: pulumi-shopkeeper:Marketplace
+    type: pulumi-shopkeeper:Market
     properties:
       speciality: vegetables
       backend: AWS

@@ -1,34 +1,34 @@
-from typing import Optional, TypedDict, Any, Dict
+import json
+import logging
+from typing import Any, Dict, Optional, TypedDict
+
 import pulumi
 from pulumi import Inputs, ResourceOptions
-import logging
-import json
-
 from pulumi_aws import s3
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-MARKETPLACE_BACKENDS = {}
+MARKET_BACKENDS = {}
 
 
-def register_marketplace_backend(name):
+def register_market_backend(name):
     def decorator(fn):
-        MARKETPLACE_BACKENDS[name] = fn
+        MARKET_BACKENDS[name] = fn
         return fn
 
     return decorator
 
 
-def get_marketplace_backend(name):
-    if name not in MARKETPLACE_BACKENDS:
+def get_market_backend(name):
+    if name not in MARKET_BACKENDS:
         raise ValueError(f"Backend '{name}' is not supported")
-    return MARKETPLACE_BACKENDS[name]
+    return MARKET_BACKENDS[name]
 
 
-@register_marketplace_backend("AWS")
-def aws_marketplace_backend(prefix: str, metadata: Dict = None, parent: str = None):
+@register_market_backend("AWS")
+def aws_market_backend(prefix: str, metadata: Dict = None, parent: str = None):
     bucket = s3.BucketV2(
         f"{prefix}-bucket",
         bucket_prefix=prefix,
@@ -94,26 +94,26 @@ def aws_marketplace_backend(prefix: str, metadata: Dict = None, parent: str = No
     )
 
 
-class MarketplaceArgs(TypedDict):
+class MarketArgs(TypedDict):
     speciality: pulumi.Input[str]
     backend: pulumi.Input[str]
 
 
-class Marketplace(pulumi.ComponentResource):
+class Market(pulumi.ComponentResource):
     billboard: pulumi.Output[str]
     metadata: pulumi.Output[Dict[str, Any]]
 
     def __init__(
-        self, name: str, args: MarketplaceArgs, opts: Optional[ResourceOptions] = None
+        self, name: str, args: MarketArgs, opts: Optional[ResourceOptions] = None
     ) -> None:
 
-        super().__init__("pulumi-shopkeeper:index:Marketplace", name, args, opts)
+        super().__init__("pulumi-shopkeeper:index:Market", name, args, opts)
 
-        self.billboard = f"Jake's Fine {args.get("speciality")} Store"
+        self.billboard = f"Jake's Fine {args.get('speciality')} Store"
         self.backend = args.get("backend")
 
         bucket_prefix = name.lower().replace(" ", "")
-        self.metadata = get_marketplace_backend(self.backend)(
+        self.metadata = get_market_backend(self.backend)(
             prefix=bucket_prefix, metadata={"billboard": self.billboard}, parent=self
         )
 
@@ -125,21 +125,18 @@ class Marketplace(pulumi.ComponentResource):
         self.register_outputs(outputs)
 
     @staticmethod
-    def get(logical_name, physical_id) -> "Marketplace":
-        return Marketplace(
-            logical_name, address=physical_id, billboard="Derp", remote=True
-        )
+    def get(logical_name, physical_id) -> "Market":
+        return Market(logical_name, address=physical_id, billboard="Derp", remote=True)
 
 
 class ProducerArgs(TypedDict):
-    marketplaceStackName: pulumi.Input[str]
+    marketStackName: pulumi.Input[str]
     awscloudfile: Optional[pulumi.Input[str]]
 
 
-def get_marketplace(backend: str, market_metadata=str):
-
-    s3.BucketObjectv2.get(arn=market["metadata_arn"])
-    return None
+def get_market_metadata_from_stack(stack_name):
+    market_stack = pulumi.StackReference(stack_name)
+    return market_stack.get_output("marketMetadata")
 
 
 class Producer(pulumi.ComponentResource):
@@ -151,7 +148,6 @@ class Producer(pulumi.ComponentResource):
         super().__init__("pulumi-shopkeeper:index:Producer", name, args, opts)
 
         # get metadata from the stack output
-        marketplace_stack = pulumi.StackReference(args.get("marketplaceStackName"))
-        self.marketMetadata = marketplace_stack.get_output("marketMetadata")
+        self.marketMetadata = get_market_metadata_from_stack(args["marketStackName"])
 
         self.register_outputs({"marketMetadata": self.marketMetadata})
