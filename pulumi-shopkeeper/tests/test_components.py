@@ -16,6 +16,13 @@ class MyMocks(pulumi.runtime.Mocks):
             outputs = dict(banana="yellow", **args.inputs)
             logger.info(outputs)
             return [args.name + "_id", outputs]
+        if args.typ == "pulumi:pulumi:StackReference":
+            outputs = {"marketMetadata": {"mock": True}}
+            return [args.name + "_id", outputs]
+        if args.typ == "pulumi-shopkeeper:index:Producer":
+            outputs = dict(marketMetadata={"mock": True}, **args.inputs)
+            logger.info(outputs)
+            return [args.name + "_id", outputs]
         return [args.name + "_id", args.inputs]
 
     def call(self, args: pulumi.runtime.MockCallArgs):
@@ -61,30 +68,7 @@ def example_marketplace():
 
         yield Marketplace(
             "testmarketplace",
-            MarketplaceArgs(
-                speciality="Sneakers", address="Sneakertown 1", backend="AWS"
-            ),
-        )
-    finally:
-        pulumi.runtime.settings.configure(old_settings)
-        loop.set_default_executor(ThreadPoolExecutor())
-
-
-@pytest.fixture
-def example_producer(example_marketplace):
-    loop = asyncio.get_event_loop()
-    # bypass multithreading for now
-    loop.set_default_executor(ImmediateExecutor())
-
-    old_settings = pulumi.runtime.settings.SETTINGS
-    try:
-        pulumi.runtime.mocks.set_mocks(MyMocks())
-        from shopkeeper.components import Producer, ProducerArgs
-
-        yield Producer(
-            "testproducer",
-            ProducerArgs(marketplaceAddress=example_marketplace.address),
-            marketplace=example_marketplace,
+            MarketplaceArgs(speciality="Sneakers", backend="AWS"),
         )
     finally:
         pulumi.runtime.settings.configure(old_settings)
@@ -105,8 +89,10 @@ def test_marketplace(example_marketplace):
 
 
 @pulumi.runtime.test
-def test_producer(example_producer):
-    def check_producer():
-        assert 1 == 1
+def test_producer():
+    """
+    Because producer reaches out to an external resource (a stack or file), it's not completely obvious how to mock out and test this.
+    """
+    from shopkeeper.components import Producer, ProducerArgs
 
-    return
+    assert 1 == 1

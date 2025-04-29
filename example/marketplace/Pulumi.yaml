@@ -1,0 +1,19 @@
+name: veggiemark
+runtime: yaml
+description: Vegetables!
+
+packages:
+  pulumi-shopkeeper:
+    source: ../../pulumi-shopkeeper
+    version: 0.0.0
+
+resources:
+  market:
+    type: pulumi-shopkeeper:Marketplace
+    properties:
+      speciality: vegetables
+      backend: AWS
+
+outputs:
+  marketBillboard: ${market.billboard}
+  marketMetadata: ${market.metadata}

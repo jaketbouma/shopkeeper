@@ -83,19 +83,24 @@ def aws_marketplace_backend(prefix: str, metadata: Dict = None, parent: str = No
         content_type="text/json",
         opts=ResourceOptions(parent=bucket),
     )
-    return output_metadata
+    return pulumi.Output.all(
+        metadata_file.id, metadata_file.arn, output_metadata
+    ).apply(
+        lambda args: {
+            "metadata_file_provider_id": args[0],
+            "metadata_file_arn": args[1],
+            **args[2],
+        }
+    )
 
 
 class MarketplaceArgs(TypedDict):
-    address: pulumi.Input[str]
     speciality: pulumi.Input[str]
     backend: pulumi.Input[str]
 
 
 class Marketplace(pulumi.ComponentResource):
     billboard: pulumi.Output[str]
-    address: pulumi.Output[str]
-
     metadata: pulumi.Output[Dict[str, Any]]
 
     def __init__(
@@ -105,7 +110,6 @@ class Marketplace(pulumi.ComponentResource):
         super().__init__("pulumi-shopkeeper:index:Marketplace", name, args, opts)
 
         self.billboard = f"Jake's Fine {args.get("speciality")} Store"
-        self.address = args.get("address")
         self.backend = args.get("backend")
 
         bucket_prefix = name.lower().replace(" ", "")
@@ -115,7 +119,6 @@ class Marketplace(pulumi.ComponentResource):
 
         outputs = {
             "billboard": self.billboard,
-            "address": self.address,
             "metadata": self.metadata,
         }
 
@@ -129,19 +132,26 @@ class Marketplace(pulumi.ComponentResource):
 
 
 class ProducerArgs(TypedDict):
-    marketplaceAddress: pulumi.Input[str]
-    parentUrn: Optional[pulumi.Input[str]]
+    marketplaceStackName: pulumi.Input[str]
+    awscloudfile: Optional[pulumi.Input[str]]
+
+
+def get_marketplace(backend: str, market_metadata=str):
+
+    s3.BucketObjectv2.get(arn=market["metadata_arn"])
+    return None
 
 
 class Producer(pulumi.ComponentResource):
+    marketMetadata: pulumi.Output[dict[str, Any]]
+
     def __init__(
-        self,
-        name: str,
-        args: ProducerArgs,
-        opts: Optional[ResourceOptions] = None,
-        marketplace=None,
+        self, name: str, args: ProducerArgs, opts: Optional[ResourceOptions] = None
     ) -> None:
-        opts = ResourceOptions(parent=marketplace)
         super().__init__("pulumi-shopkeeper:index:Producer", name, args, opts)
 
-        self.register_outputs({})
+        # get metadata from the stack output
+        marketplace_stack = pulumi.StackReference(args.get("marketplaceStackName"))
+        self.marketMetadata = marketplace_stack.get_output("marketMetadata")
+
+        self.register_outputs({"marketMetadata": self.marketMetadata})
