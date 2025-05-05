@@ -16,7 +16,8 @@ logger = logging.getLogger(__name__)
 def example_pulumi_program():
     # Create a bucket and expose a website index document
     site_bucket = s3.Bucket(
-        "s3-website-bucket", website=s3.BucketWebsiteArgs(index_document="index.html")
+        "s3-website-bucket",
+        website=s3.BucketWebsiteArgs(index_document="index.html")
     )
     index_content = """
     <html>

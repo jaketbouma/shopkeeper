@@ -3,18 +3,18 @@ import os
 from typing import Any, Dict
 
 import boto3
-import market_backend
 import pulumi
 import pulumi_aws
 from pulumi import ResourceOptions
 
+import shopkeeper.market as market
+
 os.environ["AWS_PROFILE"] = "platform"
 
 
-class AWSMarketBackend(market_backend.MarketBackend):
-    def __init__(self, metadata_file_arn):
-        self.backend = "AWS"
-        self.market_metadata = self._get_json_from_arn(metadata_file_arn)
+class AWSMarketBackend(market.MarketBackend):
+    def __init__(self, bucket, metadata_key):
+        self.market_metadata = _read_s3_json(bucket=bucket, key=metadata_key)
 
     @classmethod
     def declare(cls, metadata, prefix: str, **kwargs) -> pulumi.Output:
@@ -51,6 +51,7 @@ class AWSMarketBackend(market_backend.MarketBackend):
             bucket=bucket.bucket,
             bucket_arn=bucket.arn,
             bucket_url=f"https://s3.{bucket.region}.amazonaws.com/{bucket.bucket}/",
+            backend_configuration={"bucket": bucket.bucket, "metadata_key": metadata_key},
         )
 
         pulumi_aws.s3.BucketObject(
@@ -63,15 +64,15 @@ class AWSMarketBackend(market_backend.MarketBackend):
         )
         return output_metadata
 
-    @staticmethod
-    def _get_json_from_arn(file_arn) -> Dict[str, Any]:
-        s3 = boto3.client("s3")
-        bucket, key = file_arn.rsplit(":", 1)[-1].split("/", 1)
-        response = s3.get_object(Bucket=bucket, Key=key)
-        return json.loads(response["Body"].read())
-
     def declare_producer(self):
         raise Exception("Not yet implemented")
 
 
-market_backend.factory.register("awsV1", AWSMarketBackend)
+def _read_s3_json(bucket, key) -> Dict[str, Any]:
+    s3 = boto3.client("s3")
+    response = s3.get_object(Bucket=bucket, Key=key)
+    return json.loads(response["Body"].read())
+
+
+market.backend_factory.register("aws:v1", AWSMarketBackend)
+market.backend_factory.register("aws:latest", AWSMarketBackend)
