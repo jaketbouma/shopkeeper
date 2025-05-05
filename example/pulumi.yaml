@@ -1,9 +1,0 @@
-name: shopkeeper-market
-description: Pulumi program for managing the market infrastructure.
-
-resources:
-  market:
-    type: pulumi-shopkeeper:index:Market
-    properties:
-      speciality: "Groceries"
-      backend: "AWS"

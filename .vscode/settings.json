@@ -1,5 +1,5 @@
 {
-    "python.testing.pytestArgs": [],
+    "python.testing.pytestArgs": ["-v", "--log-cli-level=INFO"],
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
     "python.testing.cwd": "/workspaces/shopkeeper/pulumi-shopkeeper",
@@ -8,8 +8,15 @@
         "source.organizeImports": "explicit"
     },
     "[python]": {
-        "editor.defaultFormatter": "ms-python.black-formatter",
-        "editor.formatOnSave": true
-    },
-    "isort.args":["--profile", "black"]
-}
+        "editor.formatOnType": true,
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.codeActionsOnSave": {
+          "source.fixAll": "explicit",
+          "source.organizeImports": "explicit",
+        }
+      },
+      // ruff settings and intro docs
+      // https://marketplace.visualstudio.com/items?itemName=charliermarsh.ruff
+      "ruff.lineLength": 100,
+  }

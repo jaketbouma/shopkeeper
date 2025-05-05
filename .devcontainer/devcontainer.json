@@ -37,9 +37,7 @@
 			"extensions": [
 				"pulumi.pulumi-vscode-tools",
 				"ms-python.debugpy",
-				"ms-python.flake8",
-				"ms-python.black-formatter",
-				"ms-python.isort"
+				"charliermarsh.ruff"
 			]
 		}
 	},

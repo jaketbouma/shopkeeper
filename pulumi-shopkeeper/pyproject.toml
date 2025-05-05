@@ -9,15 +9,11 @@ license = "MIT"
 python = "^3.9"
 pulumi = "^3.163.0"
 pulumi-aws = "^6.0.2"
+boto3 = "^1.38.8"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3"
-black = "^25.1.0"
-autopep8 = "^2.3.2"
-flake8 = "^7.1.2"
 debugpy = "^1.8.14"
-pytest-timeout = "^2.3.1"
-isort = "^6.0.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -30,5 +26,5 @@ filterwarnings = [
     "ignore::DeprecationWarning:aws.*:"
 ]
 testpaths = [
-    "tests"
+    "tests", "unit_tests", "integration_tests"
 ]
