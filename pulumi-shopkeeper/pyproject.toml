@@ -7,8 +7,8 @@ license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.9"
-pulumi = "^3.163.0"
-pulumi-aws = "^6.0.2"
+pulumi = "^3.167.0"
+pulumi-aws = "^6.79.2"
 boto3 = "^1.38.8"
 
 [tool.poetry.group.dev.dependencies]
@@ -20,8 +20,8 @@ requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
-minversion = "6.0"
-addopts = "-ra -q -p no:warnings"
+minversion = "8.0"
+addopts = "-ra -p no:warnings"
 filterwarnings = [
     "ignore::DeprecationWarning:aws.*:"
 ]

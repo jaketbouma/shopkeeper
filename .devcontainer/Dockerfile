@@ -44,6 +44,8 @@ RUN chsh -s /bin/zsh
 RUN mkdir /commandhistory \
     && touch /commandhistory/.zsh_history \
     && chown -R $USER_NAME /commandhistory
+
+RUN poetry self update
 EXPOSE 5678
 
 USER $USER_NAME

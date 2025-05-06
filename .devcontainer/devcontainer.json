@@ -35,9 +35,9 @@
 				}
 			},
 			"extensions": [
-				"pulumi.pulumi-vscode-tools",
 				"ms-python.debugpy",
-				"charliermarsh.ruff"
+				"charliermarsh.ruff",
+				"ms-python.python"
 			]
 		}
 	},
