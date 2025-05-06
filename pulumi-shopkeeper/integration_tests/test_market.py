@@ -19,6 +19,12 @@ market_backends = [
 ]
 market_backend_ids = [x["backend"] for x in market_backends]
 
+tags = {
+    "environment": "test",
+    "project": "shopkeeper",
+    "codebase": "https://github.com/jaketbouma/shopkeeper/tree/main/pulumi-shopkeeper/integration_tests",
+}
+
 
 @pytest.fixture(params=market_backends, ids=market_backend_ids)
 def veg_market_backend(request, pytestconfig):
@@ -40,6 +46,7 @@ def veg_market_backend(request, pytestconfig):
                 speciality="Fresh and nutritious vegetables",
                 backend=backend,
                 backend_declaration=backend_declaration,
+                tags=tags,
             ),
         )
         pulumi.export("backend_configuration", m.backend_configuration)
@@ -69,3 +76,36 @@ def test_veg_market_backend(veg_market_backend):
     market_backend = market.backend_factory.get(backend)(**backend_configuration)
     logger.info(f"Initialized {backend} backend with {backend_configuration}")
     assert market_backend.metadata is not None
+
+
+def test_pumpkin_producer(veg_market_backend):
+    backend = veg_market_backend["backend"]
+    backend_configuration = veg_market_backend["backend_configuration"]
+    market_backend = market.backend_factory.get(backend)(tags=tags, **backend_configuration)
+    name = "pumpkintown"
+    metadata = {"product_owner": "pete@pumpkintown.com"}
+
+    def declare_pumpkin_producer():
+        p = market.Producer(
+            name=name,
+            args=market.ProducerArgs(
+                backend=backend,
+                backend_configuration=backend_configuration,
+                metadata=metadata,
+                tags=tags,
+            ),
+        )
+
+    stack = pulumi.automation.create_or_select_stack(
+        stack_name=f"pytest-{backend.replace(':', '-')}-{name}",
+        project_name="test-infra",
+        program=declare_pumpkin_producer,
+    )
+
+    up_result = stack.up()
+    logger.info(f"pulumi: {up_result.summary.message}")
+
+    # get the producer metadata with boto
+    producer_metadata = market_backend.get_producer(name)
+
+    assert producer_metadata == metadata
