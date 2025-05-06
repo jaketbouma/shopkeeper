@@ -1,0 +1,24 @@
+name: tomato-farmer
+runtime: yaml
+description: Tomatoes large and small
+
+packages:
+  pulumi-shopkeeper:
+    source: ../../pulumi-shopkeeper
+    version: 0.0.0
+
+resources:
+  market:
+    type: pulumi:pulumi:StackReference
+    properties:
+      name: /veggiemark/dev
+  farmStall:
+    type: pulumi-shopkeeper:Producer
+    properties:
+      marketplaceStackName: /veggiemark/dev
+
+outputs:
+  marketMetadataViaStackRef: ${market.outputs["marketMetadata"]}
+  marketMetadata: ${farmStall.marketMetadata}
+
+  
