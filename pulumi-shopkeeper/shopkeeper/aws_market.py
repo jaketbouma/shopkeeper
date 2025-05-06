@@ -17,19 +17,21 @@ logger = logging.getLogger(__name__)
 
 
 class AWSMarketBackend(market.MarketBackend):
-    def __init__(self, bucket, metadata_key):
+    def __init__(self, bucket, metadata_key, tags=None):
         self.metadata = _read_s3_json(bucket=bucket, key=metadata_key)
+        self.tags = tags
 
     @classmethod
-    def declare(cls, metadata, prefix: str, **kwargs) -> Output:
-        producer_key = "/producer/"
-        metadata_key = "/metadata/metadata.json"
+    def declare(cls, metadata, prefix: str, tags=None, **kwargs) -> Output:
+        producer_key = "/shopkeeper/producer/"
+        metadata_key = "/shopkeeper/market.json"
 
         bucket = pulumi_s3.BucketV2(
             f"{prefix}-bucket",
             bucket_prefix=prefix,
             force_destroy=True,
             opts=ResourceOptions(),
+            tags=tags,
         )
         pulumi_s3.BucketOwnershipControls(
             f"{prefix}-BucketOwnershipControls",
@@ -39,13 +41,14 @@ class AWSMarketBackend(market.MarketBackend):
             },
             opts=ResourceOptions(parent=bucket),
         )
-        producer_folder = pulumi_s3.BucketObject(
+        producer_folder = pulumi_s3.BucketObjectv2(
             f"{prefix}-producers",
             bucket=bucket.bucket,
             key=producer_key,
             content=None,
             content_type=None,
             opts=ResourceOptions(parent=bucket),
+            tags=tags,
         )
 
         def clean_output_metadata(
@@ -66,13 +69,14 @@ class AWSMarketBackend(market.MarketBackend):
             bucket=bucket.bucket, region=bucket.region, bucket_arn=bucket.arn
         ).apply(clean_output_metadata)
 
-        pulumi_s3.BucketObject(
+        pulumi_s3.BucketObjectv2(
             f"{prefix}-metadata",
             bucket=bucket.bucket,
             key=metadata_key,
             content=output_dict.apply(json.dumps),
             content_type="text/json",
             opts=ResourceOptions(parent=bucket),
+            tags=tags,
         )
         return output_dict
 
@@ -82,13 +86,14 @@ class AWSMarketBackend(market.MarketBackend):
         bucket = self.metadata["bucket"]
         producer_key = self._get_producer_key(name)
 
-        pulumi_s3.BucketObject(
+        pulumi_s3.BucketObjectv2(
             f"{name}-producer",
             bucket=bucket,
             key=producer_key,
             content=json.dumps(metadata),
             content_type="text/json",
             opts=opts,
+            tags=self.tags,
         )
         return None
 
@@ -97,7 +102,7 @@ class AWSMarketBackend(market.MarketBackend):
         return _read_s3_json(self.metadata["bucket"], producer_key)
 
     def _get_producer_key(self, name):
-        return f"{self.metadata['producer_key']}/{name}/{name}.json"
+        return f"{self.metadata['producer_key'].rstrip('/')}/producer={name}/{name}.json"
 
 
 def _read_s3_json(bucket: str, key: str) -> Dict[str, Any]:

@@ -42,6 +42,7 @@ class MarketArgs(TypedDict):
     speciality: Input[str]
     backend: Input[str]
     backend_declaration: Optional[Input[Dict[str, Any]]]
+    tags: Input[Dict[str, str]]
 
 
 class Market(ComponentResource):
@@ -70,7 +71,9 @@ class Market(ComponentResource):
             "_backend_declaration": backend_declaration,
         }
 
-        declare_outputs = Backend.declare(metadata=self.metadata, **backend_declaration)
+        declare_outputs = Backend.declare(
+            metadata=self.metadata, tags=args.get("tags"), **backend_declaration
+        )
 
         self.backend_configuration = declare_outputs["backend_configuration"]
 
@@ -85,16 +88,19 @@ class Market(ComponentResource):
 class ProducerArgs(TypedDict):
     backend: Input[str]
     backend_configuration: Input[str]
+    metadata: Input[Dict[str, Any]]
+    tags: Input[Dict[str, str]]
 
 
 class Producer(ComponentResource):
     def __init__(
         self,
         name: str,
-        args: MarketArgs,
+        args: ProducerArgs,
         opts: Optional[ResourceOptions] = None,
     ) -> None:
         super().__init__("pulumi-shopkeeper:index:Market", name, args, opts)
         Backend = backend_factory.get(backend=args.get("backend"))
-        backend = Backend(**args.get("backend_configuration"))
-        print(backend)
+        backend = Backend(**args.get("backend_configuration"), tags=args.get("tags"))
+        p = backend.declare_producer(name=name, metadata=args.get("metadata"))
+        print(p)
