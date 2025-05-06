@@ -1,6 +1,6 @@
 import os
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, TypedDict
+from typing import Any, Dict, Optional, Type, TypedDict
 
 from pulumi import ComponentResource, Input, Output, ResourceOptions
 
@@ -20,7 +20,7 @@ class MarketBackend(ABC):
         pass
 
     @abstractmethod
-    def declare_producer(self, *args, **kwargs) -> Output:
+    def declare_producer(self, *args, **kwargs) -> None:
         pass
 
 
@@ -31,7 +31,7 @@ class MarketBackendFactory:
     def get(self, backend) -> MarketBackend:
         return self._backends[backend]
 
-    def register(self, market_backend_name: str, market_backend_class: MarketBackend):
+    def register(self, market_backend_name: str, market_backend_class: Type[MarketBackend]):
         self._backends[market_backend_name] = market_backend_class
 
 

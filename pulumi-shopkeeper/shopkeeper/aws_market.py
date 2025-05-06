@@ -1,7 +1,7 @@
 import json
 import logging
 import os
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import boto3
 from pulumi import Output, ResourceOptions
@@ -76,8 +76,28 @@ class AWSMarketBackend(market.MarketBackend):
         )
         return output_dict
 
-    def declare_producer(self):
-        raise Exception("Not yet implemented")
+    def declare_producer(
+        self, name: str, metadata: Dict, opts: Optional[ResourceOptions] = None, **kwargs
+    ):
+        bucket = self.metadata["bucket"]
+        producer_key = self._get_producer_key(name)
+
+        pulumi_s3.BucketObject(
+            f"{name}-producer",
+            bucket=bucket,
+            key=producer_key,
+            content=json.dumps(metadata),
+            content_type="text/json",
+            opts=opts,
+        )
+        return None
+
+    def get_producer(self, name: str):
+        producer_key = self._get_producer_key(name)
+        return _read_s3_json(self.metadata["bucket"], producer_key)
+
+    def _get_producer_key(self, name):
+        return f"{self.metadata['producer_key']}/{name}/{name}.json"
 
 
 def _read_s3_json(bucket: str, key: str) -> Dict[str, Any]:
