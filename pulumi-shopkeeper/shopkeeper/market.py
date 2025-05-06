@@ -99,8 +99,10 @@ class Producer(ComponentResource):
         args: ProducerArgs,
         opts: Optional[ResourceOptions] = None,
     ) -> None:
-        super().__init__("pulumi-shopkeeper:index:Market", name, args, opts)
+        super().__init__("pulumi-shopkeeper:index:Producer", name, args, opts)
         Backend = backend_factory.get(backend=args.get("backend"))
         backend = Backend(**args.get("backend_configuration"), tags=args.get("tags"))
-        p = backend.declare_producer(name=name, metadata=args.get("metadata"))
+        p = backend.declare_producer(
+            name=name, metadata=args.get("metadata"), opts=ResourceOptions(parent=self)
+        )
         print(p)

@@ -97,7 +97,7 @@ def test_pumpkin_producer(veg_market_backend):
         )
 
     stack = pulumi.automation.create_or_select_stack(
-        stack_name=f"pytest-{name.replace(':', '--')}",
+        stack_name=f"pytest-{backend.replace(':', '-')}-{name}",
         project_name="test-infra",
         program=declare_pumpkin_producer,
     )

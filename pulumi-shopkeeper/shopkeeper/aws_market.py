@@ -87,7 +87,7 @@ class AWSMarketBackend(market.MarketBackend):
         producer_key = self._get_producer_key(name)
 
         pulumi_s3.BucketObjectv2(
-            f"{name}-producer",
+            f"{name}-metadata-object",
             bucket=bucket,
             key=producer_key,
             content=json.dumps(metadata),
