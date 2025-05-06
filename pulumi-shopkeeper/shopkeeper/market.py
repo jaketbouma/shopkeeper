@@ -2,25 +2,25 @@ import os
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, TypedDict
 
-import pulumi
-from pulumi import ResourceOptions
+from pulumi import ComponentResource, Input, Output, ResourceOptions
 
 os.environ["AWS_PROFILE"] = "platform"
 
 
 class MarketBackend(ABC):
-    market_metadata: Dict[str, Any]
+    metadata: Dict[str, Any]
 
+    @abstractmethod
     def __init__(self, **kwargs):
         pass
 
     @classmethod
     @abstractmethod
-    def declare(cls, **kwargs) -> pulumi.Output:
+    def declare(cls, *args, **kwargs) -> Output:
         pass
 
     @abstractmethod
-    def declare_producer(self, **kwargs) -> pulumi.Output:
+    def declare_producer(self, *args, **kwargs) -> Output:
         pass
 
 
@@ -39,15 +39,15 @@ backend_factory = MarketBackendFactory()
 
 
 class MarketArgs(TypedDict):
-    speciality: pulumi.Input[str]
-    backend: pulumi.Input[str]
-    backend_declaration: Optional[pulumi.Input[Dict[str, Any]]]
+    speciality: Input[str]
+    backend: Input[str]
+    backend_declaration: Optional[Input[Dict[str, Any]]]
 
 
-class Market(pulumi.ComponentResource):
-    metadata: pulumi.Output[Dict[str, Any]]
-    backend: pulumi.Output[str]
-    backend_configuration: pulumi.Output[[str, Any]]
+class Market(ComponentResource):
+    metadata: Output[Dict[str, Any]]
+    backend: Output[str]
+    backend_configuration: Output[Dict[str, Any]]
 
     def __init__(
         self,
@@ -60,28 +60,34 @@ class Market(pulumi.ComponentResource):
 
         Backend = backend_factory.get(backend=args.get("backend"))
 
-        metadata = pulumi.Output.all(
-            backend=args.get("backend"),
-            backend_declaration=args.get("backend_declaration"),
-            speciality=args.get("speciality"),
-        )
+        backend = args.get("backend")
+        backend_declaration = args.get("backend_declaration")
+        speciality = args.get("speciality")
 
-        self.declare_outputs = Backend.declare(metadata=metadata, **args.get("backend_declaration"))
+        self.metadata = {
+            "speciality": speciality,
+            "backend": backend,
+            "_backend_declaration": backend_declaration,
+        }
 
-        self.backend_configuration = self.declare_outputs.backend_configuration
-        self.backend = args.get("backend")
+        declare_outputs = Backend.declare(metadata=self.metadata, **backend_declaration)
+
+        self.backend_configuration = declare_outputs["backend_configuration"]
 
         self.register_outputs(
-            {"backend_configuration": self.backend_configuration, "backend": self.backend}
+            {
+                "backend_configuration": self.backend_configuration,
+                "metadata": self.metadata,
+            }
         )
 
 
 class ProducerArgs(TypedDict):
-    backend: pulumi.Input[str]
-    backend_configuration: pulumi.Input[str]
+    backend: Input[str]
+    backend_configuration: Input[str]
 
 
-class Producer(pulumi.ComponentResource):
+class Producer(ComponentResource):
     def __init__(
         self,
         name: str,
