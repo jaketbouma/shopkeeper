@@ -59,5 +59,7 @@
 	],
 	"containerEnv": {
 		"GITHUB_USERNAME": "${localEnv:GITHUB_USERNAME}"
-	}
+	},
+	"workspaceMount": "source=${localEnv:GITHUB_USERNAME}-shopkeeper-workspace,target=/workspace,type=volume",
+	"workspaceFolder": "/workspace"
 }

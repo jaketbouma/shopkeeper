@@ -25,6 +25,7 @@ class AWSMarketBackend(market.MarketBackend):
     def declare(cls, metadata, prefix: str, tags=None, **kwargs) -> Output:
         producer_key = "/shopkeeper/producer/"
         metadata_key = "/shopkeeper/market.json"
+        dataset_key = "/shopkeeper/dataset/"
 
         bucket = pulumi_s3.BucketV2(
             f"{prefix}-bucket",
@@ -55,10 +56,13 @@ class AWSMarketBackend(market.MarketBackend):
             d: Dict,
             producer_key=producer_key,
             metadata_key=metadata_key,
+            dataset_key=dataset_key,
         ):
             return {
                 "producer_key": producer_key,
                 "metadata_key": metadata_key,
+                "dataset_key": dataset_key,
+                "region": d["region"],
                 "bucket": d["bucket"],
                 "bucket_url": f"https://s3.{d['region']}.amazonaws.com/{d['bucket']}/",
                 "backend_configuration": {"bucket": d["bucket"], "metadata_key": metadata_key},
@@ -102,7 +106,38 @@ class AWSMarketBackend(market.MarketBackend):
         return _read_s3_json(self.metadata["bucket"], producer_key)
 
     def _get_producer_key(self, name):
-        return f"{self.metadata['producer_key'].rstrip('/')}/producer={name}/{name}.json"
+        return f"{self.metadata['producer_key'].rstrip('/')}/producer={name}/metadata.json"
+
+    def declare_dataset(
+        self,
+        name: str,
+        metadata: Dict,
+        configuration: Dict,
+        opts: Optional[ResourceOptions] = None,
+        **kwargs,
+    ):
+        bucket = self.metadata["bucket"]
+        producer_key = self._get_producer_key(name)
+
+        pulumi_s3.BucketObjectv2(
+            f"{name}-metadata-object",
+            bucket=bucket,
+            key=producer_key,
+            content=json.dumps(metadata),
+            content_type="text/json",
+            opts=opts,
+            tags=self.tags,
+        )
+
+        #
+        # do other stuff with the configuration...
+
+    def _get_dataset_key(self, name):
+        return f"{self.metadata['dataset_key'].rstrip('/')}/dataset={name}/{name}.json"
+
+    def get_dataset(self, name: str):
+        dataset_key = self._get_dataset_key(name)
+        return _read_s3_json(self.metadata["bucket"], dataset_key)
 
 
 def _read_s3_json(bucket: str, key: str) -> Dict[str, Any]:
