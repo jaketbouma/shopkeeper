@@ -8,17 +8,20 @@ os.environ["AWS_PROFILE"] = "platform"
 
 
 class MarketBackend(ABC):
-    metadata: Dict[str, Any]
-    configuration: Dict[str, Any]
+    metadata_version: str = "v1"
+    backend: str
+    backend_configuration: Dict[str, Any]
 
     @abstractmethod
-    def __init__(self, **kwargs):
-        self.metadata = {}
-        pass
+    def __init__(self, name: str, backend: str, backend_configuration: Dict[str, Any], tags=None):
+        self.name = name
+        self.backend = backend
+        self.backend_configuration = backend_configuration
+        self.tags = tags
 
     @classmethod
     @abstractmethod
-    def declare(cls, *args, **kwargs) -> Output:
+    def declare(cls, name, **kwargs) -> "MarketBackend":
         pass
 
     @abstractmethod
