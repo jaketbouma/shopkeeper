@@ -22,14 +22,17 @@ class AWSMarketBackend(market.MarketBackend):
         self.tags = tags
 
     @classmethod
-    def declare(cls, metadata, prefix: str, tags=None, **kwargs) -> Output:
-        producer_key = "/shopkeeper/producer/"
-        metadata_key = "/shopkeeper/market.json"
-        dataset_key = "/shopkeeper/dataset/"
+    def declare(cls, name, metadata, bucket_prefix: str, tags=None, **kwargs) -> market.MarketBackend:
+        resource_paths = Dict(
+            producer_key= "/shopkeeper/market={name}/producer/",
+            dataset_key = "/shopkeeper/market={name}/dataset/",
+            consumer_key = "/shopkeeper/market={name}/consumer/",
+        )
 
+        # create bucket and set permissions
         bucket = pulumi_s3.BucketV2(
-            f"{prefix}-bucket",
-            bucket_prefix=prefix,
+            f"{name}-bucket",
+            bucket_prefix=bucket_prefix,
             force_destroy=True,
             opts=ResourceOptions(),
             tags=tags,
@@ -42,31 +45,27 @@ class AWSMarketBackend(market.MarketBackend):
             },
             opts=ResourceOptions(parent=bucket),
         )
-        producer_folder = pulumi_s3.BucketObjectv2(
-            f"{prefix}-producers",
-            bucket=bucket.bucket,
-            key=producer_key,
-            content=None,
-            content_type=None,
-            opts=ResourceOptions(parent=bucket),
-            tags=tags,
-        )
 
-        def clean_output_metadata(
-            d: Dict,
-            producer_key=producer_key,
-            metadata_key=metadata_key,
-            dataset_key=dataset_key,
-        ):
+        # top level folder for each resource
+        for resource_path in [resource_paths]:
+            pulumi_s3.BucketObjectv2(
+                f"{prefix}-producers",
+                bucket=bucket.bucket,
+                key=resource_path,
+                content=None,
+                content_type=None,
+                opts=ResourceOptions(parent=bucket),
+                tags=tags,
+            )
+
+        def clean_output_metadata(d: Dict):
             return {
-                "producer_key": producer_key,
-                "metadata_key": metadata_key,
-                "dataset_key": dataset_key,
                 "region": d["region"],
                 "bucket": d["bucket"],
                 "bucket_url": f"https://s3.{d['region']}.amazonaws.com/{d['bucket']}/",
                 "backend_configuration": {"bucket": d["bucket"], "metadata_key": metadata_key},
                 "bucket_arn": d["bucket_arn"],
+                **resource_paths,
             }
 
         output_dict = Output.all(
@@ -82,7 +81,7 @@ class AWSMarketBackend(market.MarketBackend):
             opts=ResourceOptions(parent=bucket),
             tags=tags,
         )
-        return output_dict
+        return cls(bucket_key=bucket.bucket, metadata=metadata_key)
 
     def declare_producer(
         self, name: str, metadata: Dict, opts: Optional[ResourceOptions] = None, **kwargs

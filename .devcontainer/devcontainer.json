@@ -61,6 +61,5 @@
 		"GITHUB_USERNAME": "${localEnv:GITHUB_USERNAME}"
 	},
 	"workspaceMount": "source=${localEnv:GITHUB_USERNAME}-shopkeeper-workspace,target=/workspace,type=volume",
-	"workspaceFolder": "/workspace",
-	"postCreateCommand": "sudo chown ${localEnv:GITHUB_USERNAME} /workspace"
+	"workspaceFolder": "/workspace"
 }
