@@ -48,9 +48,9 @@
 	},
 
 	// create your own startup.sh script, if you want
-	"postStartCommand": "[ ! -f /home/${localEnv:GITHUB_USERNAME}/startup.sh ] || /home/${localEnv:GITHUB_USERNAME}/startup.sh",
+	"postStartCommand": "[ ! -f .devcontainer/${localEnv:GITHUB_USERNAME}.postStartCommand.sh ] || .devcontainer/${localEnv:GITHUB_USERNAME}.postStartCommand.sh",
 
-	"workspaceMount": "source=${localEnv:GITHUB_USERNAME}-shopkeeper-workspace,target=/workspace,type=volume",
-	"workspaceFolder": "/workspace"
+	"workspaceMount": "source=${localEnv:GITHUB_USERNAME}-shopkeeper-workspace,target=/workspaces,type=volume",
+	"workspaceFolder": "/workspaces"
 }
 
