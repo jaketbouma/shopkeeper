@@ -53,7 +53,7 @@ ENV SAVEHIST=10000
 RUN wget https://github.com/robbyrussell/oh-my-zsh/raw/master/tools/install.sh -O - | zsh || true
 RUN git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k"
 
-WORKDIR /workspace
+WORKDIR /workspace/shopkeeper
 #RUN git clone https://github.com/jaketbouma/shopkeeper.git
 #RUN cd /workspace/shopkeeper/pulumi-shopkeeper && poetry install
 
