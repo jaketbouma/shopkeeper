@@ -1,3 +1,5 @@
+#!/bin/zsh
+
 # check that $GITHUB_USERNAME is not empty
 if [ -z "$GITHUB_USERNAME" ]; then
   echo "GITHUB_USERNAME is not set. Please set it to your GitHub username."
@@ -16,4 +18,4 @@ EOF
 chezmoi init --apply $GITHUB_USERNAME
 
 # Initialize poetry
-cd /workspace/shopkeeper/pulumi-shopkeeper && poetry install
+cd /workspaces/shopkeeper/pulumi-shopkeeper && poetry install
