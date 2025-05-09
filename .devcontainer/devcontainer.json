@@ -10,20 +10,19 @@
 	Requires GITHUB_USERNAME to be set on the host machine; this is
 	used to name container user and pull dotfiles with chezmoi.
 	*/
-	"name": "pulumi-kitchen-sink",
-	"build": {
-		"dockerfile": "dev.Dockerfile",
-		"args": {
-			"GITHUB_USERNAME": "${localEnv:GITHUB_USERNAME}"
-		}
-	},
+	"name": "shopkeeper-dev",
+	
+	// Prefer to build manually, given how tricky the pulumi dependencies are
+	// docker build -f dev.Dockerfile --build-arg GITHUB_USERNAME=jaketbouma -t shopkeeper-dev:latest ./
+	"image": "shopkeeper-dev:latest",
+
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	"features": {
 		"ghcr.io/devcontainers/features/github-cli:1": {
 			"version": "latest"
 		}
 	},
-	// Zsh terminal and python extensions
+	// Zsh terminal and add python extensions
 	"customizations": {
 		"vscode": {
 			"settings": {
@@ -44,14 +43,11 @@
 	"remoteUser": "${localEnv:GITHUB_USERNAME}",
 	
 	// Sync your dotfiles (if you use chezmoi)
-	"postStartCommand": "chezmoi init --apply $GITHUB_USERNAME",
-
-	"mounts": [
-		"source=${localEnv:HOME}/history,target=/home/${localEnv:GITHUB_USERNAME}/history,type=bind"
-	],
 	"containerEnv": {
 		"GITHUB_USERNAME": "${localEnv:GITHUB_USERNAME}"
 	},
+	"postStartCommand": "chezmoi init --apply $GITHUB_USERNAME",
+
 	"workspaceMount": "source=${localEnv:GITHUB_USERNAME}-shopkeeper-workspace,target=/workspace,type=volume",
 	"workspaceFolder": "/workspace"
 }
