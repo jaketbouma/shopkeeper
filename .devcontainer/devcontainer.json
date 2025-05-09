@@ -46,11 +46,10 @@
 	"containerEnv": {
 		"GITHUB_USERNAME": "${localEnv:GITHUB_USERNAME}"
 	},
-	"postStartCommand": "/home/${localEnv:GITHUB_USERNAME}/startup.sh",
-	"mounts": [
-		// Sync your dotfiles (if you use chezmoi)
-		"source=${localWorkspaceFolder}/.devcontainer/${localEnv:GITHUB_USERNAME}.startup.sh,target=/home/${localEnv:GITHUB_USERNAME}/startup.sh,type=bind",
-	],
+
+	// create your own startup.sh script, if you want
+	"postStartCommand": "[ -f /home/${localEnv:GITHUB_USERNAME}/startup.sh ] && /home/${localEnv:GITHUB_USERNAME}/startup.sh",
+
 	"workspaceMount": "source=${localEnv:GITHUB_USERNAME}-shopkeeper-workspace,target=/workspace,type=volume",
 	"workspaceFolder": "/workspace"
 }
