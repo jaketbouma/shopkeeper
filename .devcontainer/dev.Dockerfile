@@ -57,5 +57,5 @@ WORKDIR /workspace/shopkeeper
 #RUN git clone https://github.com/jaketbouma/shopkeeper.git
 #RUN cd /workspace/shopkeeper/pulumi-shopkeeper && poetry install
 
-VOLUME /workspace
+VOLUME /workspaces
 ENTRYPOINT ["/bin/zsh"]
