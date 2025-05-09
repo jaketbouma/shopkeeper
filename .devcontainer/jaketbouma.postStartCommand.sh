@@ -11,7 +11,7 @@ mkdir -p ~/.config/chezmoi
 # I have templated .zshrc
 cat <<EOF > ~/.config/chezmoi/chezmoi.toml
 [data]
-    histfile = "/workspace/.history"
+    histfile = "/workspaces/.zsh_history"
 EOF
   
 # Initialize chezmoi
