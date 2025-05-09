@@ -12,7 +12,7 @@
 	*/
 	"name": "pulumi-kitchen-sink",
 	"build": {
-		"dockerfile": "Dockerfile",
+		"dockerfile": "dev.Dockerfile",
 		"args": {
 			"GITHUB_USERNAME": "${localEnv:GITHUB_USERNAME}"
 		}
@@ -23,7 +23,7 @@
 			"version": "latest"
 		}
 	},
-	// Set up with a nice zsh terminal and add python extensions
+	// Zsh terminal and python extensions
 	"customizations": {
 		"vscode": {
 			"settings": {
@@ -42,18 +42,10 @@
 		}
 	},
 	"remoteUser": "${localEnv:GITHUB_USERNAME}",
+	
 	// Sync your dotfiles (if you use chezmoi)
 	"postStartCommand": "chezmoi init --apply $GITHUB_USERNAME",
-	/*
-	In your .zshrc, configure command history to append somewhere easier to mount into the container
 
-	autoload -Uz add-zsh-hook; append_history() { fc -W }; add-zsh-hook precmd append_history;
-	HISTFILE=$HOME/history/.zsh_history
-	HISTSIZE=10000
-	SAVEHIST=10000
-
-	...and then chezmoi can sync this to your container as well
-	*/
 	"mounts": [
 		"source=${localEnv:HOME}/history,target=/home/${localEnv:GITHUB_USERNAME}/history,type=bind"
 	],
@@ -61,6 +53,5 @@
 		"GITHUB_USERNAME": "${localEnv:GITHUB_USERNAME}"
 	},
 	"workspaceMount": "source=${localEnv:GITHUB_USERNAME}-shopkeeper-workspace,target=/workspace,type=volume",
-	"workspaceFolder": "/workspace",
-	"postCreateCommand": "sudo chown ${localEnv:GITHUB_USERNAME} /workspace"
+	"workspaceFolder": "/workspace"
 }

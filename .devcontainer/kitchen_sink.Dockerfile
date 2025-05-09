@@ -45,6 +45,9 @@ RUN mkdir /commandhistory \
     && touch /commandhistory/.zsh_history \
     && chown -R $USER_NAME /commandhistory
 
+RUN mkdir /workspace \
+    && chown -R $USER_NAME /workspace
+
 RUN poetry self update
 EXPOSE 5678
 
@@ -61,5 +64,3 @@ ENV POETRY_VIRTUALENVS_IN_PROJECT=true
 # Install zsh stuff
 RUN wget https://github.com/robbyrussell/oh-my-zsh/raw/master/tools/install.sh -O - | zsh || true
 RUN git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k"
-
-
