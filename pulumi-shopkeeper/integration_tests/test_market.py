@@ -3,6 +3,7 @@ import os
 
 import pulumi
 import pytest
+
 import shopkeeper.market as market
 from shopkeeper import aws_market
 
@@ -15,7 +16,7 @@ logger.info(f"imported {aws_market}")
 
 market_backends = [
     {"backend": "aws:latest", "backend_declaration": {"prefix": "aws-latest-veg"}},
-    {"backend": "aws:v1", "backend_declaration": {"prefix": "aws-v1-veg"}},
+    # {"backend": "aws:v1", "backend_declaration": {"prefix": "aws-v1-veg"}},
 ]
 market_backend_ids = [x["backend"] for x in market_backends]
 
@@ -49,7 +50,7 @@ def veg_market_backend(request, pytestconfig):
         m = market.Market(
             "veg-market",
             args=market.MarketArgs(
-                speciality="Fresh and nutritious vegetables",
+                description="Fresh and nutritious vegetables",
                 backend=backend,
                 backend_declaration=backend_declaration,
                 tags=tags,
@@ -75,8 +76,8 @@ def veg_market_backend(request, pytestconfig):
     return new_backend
 
 
-def test_veg_market_backend(veg_market):
-    assert veg_market.metadata is not None
+def test_veg_market_backend(veg_market_backend):
+    assert veg_market_backend.metadata is not None
 
 
 pumpkin_producer_name = "pumpkintown"

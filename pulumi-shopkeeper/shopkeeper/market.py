@@ -130,20 +130,14 @@ class Market(ComponentResource):
             }
         )
 
-        declaration_outputs = Backend.declare(
+        Backend.declare(
+            name=name,
             metadata=self.metadata,
             tags=args.get("tags"),
             **backend_declaration,  # type:ignore
         )
 
-        self.backend_configuration = declaration_outputs["backend_configuration"]
-
-        self.register_outputs(
-            {
-                "backend_configuration": self.backend_configuration,
-                "metadata": self.metadata,
-            }
-        )
+        self.register_outputs({})
 
 
 class ProducerArgs(TypedDict):

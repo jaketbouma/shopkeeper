@@ -1,4 +1,7 @@
 {
+    "github.copilot.enable": {
+      "*": false
+    },
     "python.testing.pytestArgs": ["-v", "--log-cli-level=INFO"],
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,

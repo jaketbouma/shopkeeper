@@ -59,7 +59,7 @@ class AWSMarketBackend(market.MarketBackend):
         bucket_prefix: Optional[str] = None,
         tags: Optional[Dict[str, str]] = None,
         **metadata,
-    ) -> market.MarketBackend:
+    ) -> Dict:
         """
         First declare (and deploy) infra, then initialize the class
 
@@ -94,6 +94,15 @@ class AWSMarketBackend(market.MarketBackend):
             opts=ResourceOptions(parent=bucket),
         )
 
+        from pulumi import export
+
+        export(
+            "backend_configuration",
+            Output.all(
+                bucket=bucket.bucket, market_metadata_key=Output.from_input(market_metadata_key)
+            ),
+        )
+
         def build_json_metadata(d: Dict):
             d = {
                 "name": name,
@@ -123,7 +132,6 @@ class AWSMarketBackend(market.MarketBackend):
             opts=ResourceOptions(parent=bucket),
             tags=tags,
         )
-        return cls(bucket=bucket.bucket, metadata_key=market_metadata_key, tags=tags)
 
     def declare_producer(
         self, name: str, metadata: Dict, opts: Optional[ResourceOptions] = None, **kwargs
