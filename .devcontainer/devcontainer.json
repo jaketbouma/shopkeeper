@@ -46,11 +46,9 @@
 	"containerEnv": {
 		"GITHUB_USERNAME": "${localEnv:GITHUB_USERNAME}"
 	},
-
 	// create your own startup.sh script, if you want
 	"postStartCommand": "[ ! -f .devcontainer/${localEnv:GITHUB_USERNAME}.postStartCommand.sh ] || .devcontainer/${localEnv:GITHUB_USERNAME}.postStartCommand.sh",
 
 	"workspaceMount": "source=${localEnv:GITHUB_USERNAME}-shopkeeper-workspace,target=/workspaces,type=volume",
 	"workspaceFolder": "/workspaces"
 }
-
