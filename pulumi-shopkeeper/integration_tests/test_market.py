@@ -14,12 +14,6 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 logger.info(f"imported {aws_market}")
 
-market_backends = [
-    {"backend_type": "aws:latest", "backend_declaration": {"prefix": "aws-latest-veg"}},
-    # {"backend_type": "aws:v1", "backend_declaration": {"prefix": "aws-v1-veg"}},
-]
-market_backend_ids = [x["backend_type"] for x in market_backends]
-
 tags = {
     "environment": "test",
     "project": "shopkeeper",
@@ -27,10 +21,27 @@ tags = {
 }
 
 
-@pytest.fixture(params=market_backends, ids=market_backend_ids)
-def veg_market_backend(request, pytestconfig):
-    backend_type = request.param["backend_type"]
-    backend_declaration = request.param["backend_declaration"]
+@pytest.fixture(
+    params=[
+        {
+            "backend_type": "aws:latest",
+            "backend_declaration": {"prefix": "aws-latest-veg"},
+        },
+        {
+            "backend_type": "aws:v1",
+            "backend_declaration": {"prefix": "aws-v1-veg"},
+        },
+    ],
+    ids=lambda v: v["backend_type"],
+)
+def market_backend_declaration(request):
+    return request.param
+
+
+@pytest.fixture()
+def veg_market_backend(market_backend_declaration, pytestconfig):
+    backend_type = market_backend_declaration["backend_type"]
+    backend_declaration = market_backend_declaration["backend_declaration"]
     cache_key = f"veg_market_backend/{backend_type}"
 
     # use a cached backend
@@ -76,8 +87,8 @@ def veg_market_backend(request, pytestconfig):
     return new_backend
 
 
-def test_veg_market_backend(veg_market_backend):
-    assert veg_market_backend.metadata is not None
+def test_veg_market_backend(veg_market_backend, market_backend_declaration):
+    assert veg_market_backend.backend == market_backend_declaration["backend"]
 
 
 pumpkin_producer_name = "pumpkintown"

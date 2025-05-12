@@ -115,7 +115,7 @@ class AWSMarketBackend(market.MarketBackend):
                 },
                 "bucket_arn": d["bucket_arn"],
                 "tags": tags,
-                **metadata,
+                "metadata": metadata,
             }
             # DEBUGGING HERE!!!
             return json.dumps(d)
