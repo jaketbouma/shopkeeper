@@ -9,6 +9,7 @@ from pulumi_aws import s3 as pulumi_s3
 
 import shopkeeper.market as market
 
+# Laziness, for now.
 os.environ["AWS_PROFILE"] = "platform"
 
 # Configure logging
@@ -41,18 +42,15 @@ class AWSMarketBackend(market.MarketBackend):
     def __init__(self, bucket, metadata_key, tags=None):
         metadata_json_data = _read_s3_json(bucket=bucket, key=metadata_key)
 
-        # I think these properties are required for all backends...
+        # TODO I think these properties are required for all backends...
         super().__init__(
             name=metadata_json_data.pop("name"),
             backend=metadata_json_data.pop("backend"),
             backend_configuration=metadata_json_data.pop("backend_configuration"),
             tags=tags,  # client can set their own tags
         )
-        # hang on the the extra stuffs
+        # slap on the the extra stuff
         self.metadata = metadata_json_data
-
-    def producer_metadata_key(market_name, producer_name, backend_version):
-        return f"/shopkeeper/market={market_name}/producer={producer_name}/metadata-{backend_version}.json"
 
     @classmethod
     def declare(
@@ -73,7 +71,9 @@ class AWSMarketBackend(market.MarketBackend):
         Returns:
             AWSMarketBackend: An instance of the AWSMarketBackend class.
         """
-        market_metadata_key = f"/shopkeeper/market={name}/metadata-{cls.metadata_version}.json"
+        market_metadata_key = super().get_market_metadata_key(
+            name=name,
+        )
         if bucket_prefix is None:
             bucket_prefix = name
 
@@ -129,41 +129,41 @@ class AWSMarketBackend(market.MarketBackend):
         self, name: str, metadata: Dict, opts: Optional[ResourceOptions] = None, **kwargs
     ):
         bucket = self.backend_configuration["bucket"]
-        producer_key = self._get_producer_key(name)
+        producer_key = self.get_producer_metadata_key(name)
 
         pulumi_s3.BucketObjectv2(
-            f"{name}-metadata-object",
+            f"{name}-metadata-json",
             bucket=bucket,
             key=producer_key,
             content=json.dumps(metadata),
             content_type="text/json",
             opts=opts,
-            tags=tags,
+            tags=self.tags,  # add market's tags
         )
         return None
 
     def get_producer(self, name: str):
-        producer_key = self._get_producer_key(name)
+        producer_key = self.get_producer_metadata_key(name)
         return _read_s3_json(self.metadata["bucket"], producer_key)
-
-    def _get_producer_key(self, name):
-        return f"{self.metadata['producer_key'].rstrip('/')}/producer={name}/metadata.json"
 
     def declare_dataset(
         self,
         name: str,
+        producer_name: str,
         metadata: Dict,
-        configuration: Dict,
+        configuration: Optional[Dict] = None,
         opts: Optional[ResourceOptions] = None,
         **kwargs,
     ):
         bucket = self.metadata["bucket"]
-        producer_key = self._get_producer_key(name)
+        dataset_key = self.get_dataset_metadata_key(producer_name=producer_name, dataset_name=name)
+
+        # TODO connect to producer, to enforce existence...
 
         pulumi_s3.BucketObjectv2(
-            f"{name}-metadata-object",
+            f"{name}-metadata-json",
             bucket=bucket,
-            key=producer_key,
+            key=dataset_key,
             content=json.dumps(metadata),
             content_type="text/json",
             opts=opts,
@@ -173,11 +173,10 @@ class AWSMarketBackend(market.MarketBackend):
         #
         # do other stuff with the configuration...
 
-    def _get_dataset_key(self, name):
-        return f"{self.metadata['dataset_key'].rstrip('/')}/dataset={name}/{name}.json"
+        return
 
-    def get_dataset(self, name: str):
-        dataset_key = self._get_dataset_key(name)
+    def get_dataset(self, producer_name: str, name: str):
+        dataset_key = self.get_dataset_metadata_key(dataset_name=name, producer_name=producer_name)
         return _read_s3_json(self.metadata["bucket"], dataset_key)
 
 

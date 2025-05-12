@@ -15,7 +15,7 @@ class MarketBackend(ABC):
     This backend can be deployed on: AWS S3, Azure Storage, local filesystem and more.
     This abstract base class defines the common interface to these different underlying backends.
     """
-  
+
     metadata_version: str = "v1"
     backend: str
     backend_configuration: Dict[str, Any]
@@ -39,6 +39,25 @@ class MarketBackend(ABC):
     @abstractmethod
     def declare_dataset(self, *args, **kwargs) -> None:
         pass
+
+    def get_producer_metadata_key(self, producer_name):
+        """
+        Returns the key (path in file-based backend) to a producer metadata file as a string
+        """
+        return f"/shopkeeper/market={self.name}/producer={producer_name}/metadata-{self.metadata_version}.json"
+
+    @classmethod
+    def get_market_metadata_key(cls, name):
+        """
+        Returns the key (path in file-based backend) to a market's metadata file as a string
+        """
+        return f"/shopkeeper/market={name}/metadata-{cls.metadata_version}.json"
+
+    def get_dataset_metadata_key(self, producer_name, dataset_name):
+        """
+        Returns the key (path in file-based backend) to a dataset metadata file as a string
+        """
+        return f"/shopkeeper/market={self.name}/producer={producer_name}/dataset={dataset_name}/metadata-{self.metadata_version}.json"
 
 
 class MarketBackendFactory:
