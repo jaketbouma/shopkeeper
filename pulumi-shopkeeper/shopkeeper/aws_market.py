@@ -4,7 +4,7 @@ import os
 from typing import Any, Dict, Optional
 
 import boto3
-from pulumi import Output, ResourceOptions
+from pulumi import Output, ResourceOptions, export
 from pulumi_aws import s3 as pulumi_s3
 
 import shopkeeper.market as market
@@ -39,13 +39,13 @@ class AWSMarketBackend(market.MarketBackend):
     The market is deployed separately.
     """
 
-    def __init__(self, bucket, metadata_key, tags=None):
-        metadata_json_data = _read_s3_json(bucket=bucket, key=metadata_key)
+    def __init__(self, bucket, market_metadata_key, tags=None):
+        metadata_json_data = _read_s3_json(bucket=bucket, key=market_metadata_key)
 
         # TODO I think these properties are required for all backends...
         super().__init__(
             name=metadata_json_data.pop("name"),
-            backend=metadata_json_data.pop("backend"),
+            backend_type=metadata_json_data.pop("backend_type"),
             backend_configuration=metadata_json_data.pop("backend_configuration"),
             tags=tags,  # client can set their own tags
         )
@@ -58,8 +58,8 @@ class AWSMarketBackend(market.MarketBackend):
         name,
         bucket_prefix: Optional[str] = None,
         tags: Optional[Dict[str, str]] = None,
-        **metadata,
-    ) -> Dict:
+        **metadata: Optional[Dict[str, str]],
+    ) -> Output:
         """
         First declare (and deploy) infra, then initialize the class
 
@@ -94,21 +94,21 @@ class AWSMarketBackend(market.MarketBackend):
             opts=ResourceOptions(parent=bucket),
         )
 
-        from pulumi import export
-
         export(
             "backend_configuration",
             Output.all(
-                bucket=bucket.bucket, market_metadata_key=Output.from_input(market_metadata_key)
+                bucket=bucket.bucket,
+                market_metadata_key=Output.from_input(market_metadata_key),
             ),
         )
 
         def build_json_metadata(d: Dict):
-            d = {
+            return {
                 "name": name,
                 "region": d["region"],
                 "bucket": d["bucket"],
                 "bucket_url": f"https://s3.{d['region']}.amazonaws.com/{d['bucket']}/",
+                "backend_type": cls.backend_type,
                 "backend_configuration": {
                     "bucket": d["bucket"],
                     "metadata_key": market_metadata_key,
@@ -117,9 +117,10 @@ class AWSMarketBackend(market.MarketBackend):
                 "tags": tags,
                 **metadata,
             }
+            # DEBUGGING HERE!!!
             return json.dumps(d)
 
-        metadata_json_content = Output.all(
+        metadata_content = Output.all(
             bucket=bucket.bucket, region=bucket.region, bucket_arn=bucket.arn
         ).apply(build_json_metadata)
 
@@ -127,14 +128,20 @@ class AWSMarketBackend(market.MarketBackend):
             f"{name}-metadata-json",
             bucket=bucket.bucket,
             key=market_metadata_key,
-            content=metadata_json_content,
+            content=metadata_content.apply(json.dumps),
             content_type="text/json",
             opts=ResourceOptions(parent=bucket),
             tags=tags,
         )
 
+        return metadata_content
+
     def declare_producer(
-        self, name: str, metadata: Dict, opts: Optional[ResourceOptions] = None, **kwargs
+        self,
+        name: str,
+        metadata: Dict,
+        opts: Optional[ResourceOptions] = None,
+        **kwargs,
     ):
         bucket = self.backend_configuration["bucket"]
         producer_key = self.get_producer_metadata_key(name)
@@ -164,7 +171,9 @@ class AWSMarketBackend(market.MarketBackend):
         **kwargs,
     ):
         bucket = self.metadata["bucket"]
-        dataset_key = self.get_dataset_metadata_key(producer_name=producer_name, dataset_name=name)
+        dataset_key = self.get_dataset_metadata_key(
+            producer_name=producer_name, dataset_name=name
+        )
 
         # TODO connect to producer, to enforce existence...
 
@@ -184,7 +193,9 @@ class AWSMarketBackend(market.MarketBackend):
         return
 
     def get_dataset(self, producer_name: str, name: str):
-        dataset_key = self.get_dataset_metadata_key(dataset_name=name, producer_name=producer_name)
+        dataset_key = self.get_dataset_metadata_key(
+            dataset_name=name, producer_name=producer_name
+        )
         return _read_s3_json(self.metadata["bucket"], dataset_key)
 
 

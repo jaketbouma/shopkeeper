@@ -14,6 +14,9 @@ boto3 = "^1.38.8"
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3"
 debugpy = "^1.8.14"
+ruff = "^0.11.9"
+pycodestyle = "^2.13.0"
+autopep8 = "^2.3.2"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -29,6 +32,11 @@ testpaths = [
     "tests", "unit_tests", "integration_tests"
 ]
 
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.format]
+docstring-code-format = true
+
 [tool.ruff.lint.pycodestyle]
 max-doc-length = 88
-max-line-length = 100

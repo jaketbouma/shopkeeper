@@ -36,7 +36,7 @@
 			"extensions": [
 				"ms-python.debugpy",
 				"charliermarsh.ruff",
-				"ms-python.python"
+				"ms-python.python",
 			]
 		}
 	},

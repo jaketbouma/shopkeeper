@@ -24,6 +24,6 @@
       },
       // ruff settings and intro docs
       // https://marketplace.visualstudio.com/items?itemName=charliermarsh.ruff
-      "ruff.lineLength": 100,
-      "ruff.nativeServer": "auto"
+      "ruff.nativeServer": "auto",
+      "ruff.configurationPreference": "filesystemFirst",
   }

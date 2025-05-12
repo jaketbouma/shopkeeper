@@ -15,10 +15,10 @@ logger = logging.getLogger(__name__)
 logger.info(f"imported {aws_market}")
 
 market_backends = [
-    {"backend": "aws:latest", "backend_declaration": {"prefix": "aws-latest-veg"}},
-    # {"backend": "aws:v1", "backend_declaration": {"prefix": "aws-v1-veg"}},
+    {"backend_type": "aws:latest", "backend_declaration": {"prefix": "aws-latest-veg"}},
+    # {"backend_type": "aws:v1", "backend_declaration": {"prefix": "aws-v1-veg"}},
 ]
-market_backend_ids = [x["backend"] for x in market_backends]
+market_backend_ids = [x["backend_type"] for x in market_backends]
 
 tags = {
     "environment": "test",
@@ -29,15 +29,15 @@ tags = {
 
 @pytest.fixture(params=market_backends, ids=market_backend_ids)
 def veg_market_backend(request, pytestconfig):
-    backend = request.param["backend"]
+    backend_type = request.param["backend_type"]
     backend_declaration = request.param["backend_declaration"]
-    cache_key = f"veg_market_backend/{backend}"
+    cache_key = f"veg_market_backend/{backend_type}"
 
     # use a cached backend
     backend_configuration = pytestconfig.cache.get(cache_key, None)
     if backend_configuration is not None:
         logger.info(f"Using cached backend_configuration: {backend_configuration}")
-        new_backend = market.backend_factory.get(backend)(**backend_configuration)
+        new_backend = market.backend_factory.get(backend_type)(**backend_configuration)
         return new_backend
 
     # otherwise, declare stack and run pulumi up
@@ -48,20 +48,20 @@ def veg_market_backend(request, pytestconfig):
         A simple inline pulumi program to declare a market
         """
         m = market.Market(
-            "veg-market",
+            name="veg-market",
             args=market.MarketArgs(
                 description="Fresh and nutritious vegetables",
-                backend=backend,
+                backend_type=backend_type,
                 backend_declaration=backend_declaration,
                 tags=tags,
             ),
         )
         # make these outputs available via the stack
-        pulumi.export("backend_configuration", m.backend_configuration)
-        pulumi.export("backend", m.backend)
+        # pulumi.export("backend_configuration", m.backend_configuration)
+        # pulumi.export("backend", m.backend)
 
     stack = pulumi.automation.create_or_select_stack(
-        stack_name=f"pytest-{backend.replace(':', '--')}",
+        stack_name=f"pytest-{backend_type.replace(':', '--')}",
         project_name="test-infra",
         program=declare_veg_market,
     )
@@ -70,9 +70,9 @@ def veg_market_backend(request, pytestconfig):
 
     # update the cache
     backend_configuration = up_result.outputs["backend_configuration"].value
-    pytestconfig.cache.set(cache_key, backend)
+    pytestconfig.cache.set(cache_key, backend_configuration)
 
-    new_backend = market.backend_factory.get(backend)(**backend_configuration)
+    new_backend = market.backend_factory.get(backend_type)(**backend_configuration)
     return new_backend
 
 
@@ -90,15 +90,17 @@ def pumpkin_producer(veg_market_backend):
         p = market.Producer(
             name=pumpkin_producer_name,
             args=market.ProducerArgs(
-                backend=veg_market_backend["metadata"]["backend"],
-                backend_configuration=veg_market_backend["metadata"]["backend_configuration"],
+                backend_type=veg_market_backend["metadata"]["backend_type"],
+                backend_configuration=veg_market_backend["metadata"][
+                    "backend_configuration"
+                ],
                 metadata=pumpkin_producer_metadata,
                 tags=tags,
             ),
         )
 
     stack = pulumi.automation.create_or_select_stack(
-        stack_name=f"pytest-{backend.replace(':', '-')}-{pumpkin_producer_name}",
+        stack_name=f"pytest-{backend_type.replace(':', '-')}-{pumpkin_producer_name}",
         project_name="test-infra",
         program=declare_pumpkin_producer,
     )
