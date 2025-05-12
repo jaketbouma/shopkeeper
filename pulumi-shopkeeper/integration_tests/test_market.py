@@ -88,7 +88,7 @@ def veg_market_backend(market_backend_declaration, pytestconfig):
 
 
 def test_veg_market_backend(veg_market_backend, market_backend_declaration):
-    assert veg_market_backend.backend == market_backend_declaration["backend"]
+    assert veg_market_backend.backend_type == market_backend_declaration["backend_type"]
 
 
 pumpkin_producer_name = "pumpkintown"
