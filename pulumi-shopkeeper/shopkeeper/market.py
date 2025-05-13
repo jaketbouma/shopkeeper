@@ -1,3 +1,4 @@
+import inspect
 import os
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, Type, TypedDict
@@ -35,7 +36,9 @@ class MarketBackend(ABC):
 
     @classmethod
     @abstractmethod
-    def declare(cls, name, **kwargs) -> Output[Dict]:
+    def declare(
+        cls, name, backend_declaration, tags=None, **custom_namespaces
+    ) -> Output[Dict]:
         pass
 
     @abstractmethod
@@ -100,8 +103,9 @@ class MarketArgs(TypedDict):
     """
 
     description: Input[str]
-    backend_type: Input[str]
-    backend_declaration: Optional[Input[Dict[str, Any]]]
+    backend_declaration: Optional[
+        Input[Dict[str, Any]]
+    ]  # complex types are not yet supported
     tags: Input[Dict[str, str]]
 
 
@@ -120,18 +124,21 @@ class Market(ComponentResource):
         opts: Optional[ResourceOptions] = None,
     ) -> None:
         super().__init__("pulumi-shopkeeper:index:Market", name, args, opts)
-        self.billboard = f"Jake's Fine {args.get('description')} Store"
 
-        Backend = backend_factory.get(backend_type=args.get("backend_type"))
+        # check if args["backend_declaration"] is awaitable
+        if inspect.isawaitable(args["backend_declaration"]):
+            raise NotImplementedError(
+                "Input dependencies not yet implemented. Throw something back at a developer."
+            )
 
-        backend_declaration = args.get("backend_declaration")
-        description = args.get("description")
-
-        metadata_output = Backend.declare(
+        # declare the backend
+        Backend = backend_factory.get(
+            args["backend_declaration"]["backend_type"]  # type:ignore
+        )
+        Backend.declare(
             name=name,
-            metadata={"description": description},
-            tags=args.get("tags"),
-            **backend_declaration,  # type:ignore
+            opts=opts,
+            **args,
         )
 
         self.register_outputs({})
@@ -142,9 +149,8 @@ class ProducerArgs(TypedDict):
     Arguments required to declare a new producer.
     """
 
-    backend_type: Input[str]
+    description: Input[str]
     backend_configuration: Input[Dict[str, Any]]
-    metadata: Input[Dict[str, Any]]
     tags: Input[Dict[str, str]]
 
 

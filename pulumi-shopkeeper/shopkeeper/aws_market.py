@@ -58,8 +58,9 @@ class AWSMarketBackend(market.MarketBackend):
     def declare(
         cls,
         name,
-        backend_type: str,
-        bucket_prefix: Optional[str] = None,
+        backend_declaration: Dict[
+            str, Any
+        ],  # move to complex types when Pulumi supports it
         tags: Optional[Dict[str, str]] = None,
         **custom_namespaces: Optional[Dict[str, Dict]],
     ) -> Output[Dict]:
@@ -78,6 +79,9 @@ class AWSMarketBackend(market.MarketBackend):
         market_metadata_key = super().get_market_metadata_key(
             name=name,
         )
+        bucket_prefix = backend_declaration["bucket_prefix"]
+        backend_type = backend_declaration["backend_type"]
+
         if bucket_prefix is None:
             bucket_prefix = name
 
