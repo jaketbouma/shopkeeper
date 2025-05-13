@@ -35,15 +35,15 @@ class MarketBackend(ABC):
 
     @classmethod
     @abstractmethod
-    def declare(cls, name, **kwargs) -> "MarketBackend":
+    def declare(cls, name, **kwargs) -> Output[Dict]:
         pass
 
     @abstractmethod
-    def declare_producer(self, *args, **kwargs) -> None:
+    def declare_producer(self, *args, **kwargs) -> Output[Dict]:
         pass
 
     @abstractmethod
-    def declare_dataset(self, *args, **kwargs) -> None:
+    def declare_dataset(self, *args, **kwargs) -> Output[Dict]:
         pass
 
     def get_producer_metadata_key(self, producer_name):
