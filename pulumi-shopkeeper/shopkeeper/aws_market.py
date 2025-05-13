@@ -215,37 +215,39 @@ class AWSMarketBackend(market.MarketBackend):
     def declare_dataset(
         self,
         name: str,
-        producer_name: str,
         opts: Optional[ResourceOptions] = None,
         **custom_namespaces: Dict[str, Dict],
     ) -> Output:
-        bucket = self.metadata["bucket"]
-        dataset_key = self.get_dataset_metadata_key(
-            producer_name=producer_name, dataset_name=name
-        )
+        bucket = self.backend_configuration["bucket"]
+        dataset_key = self.get_producer_metadata_key(name)
 
-        # TODO connect to producer, to enforce existence...
+        def build_dataset_data(d):
+            return {**d}
+
+        dataset_data = Output.all(
+            name=name,
+            dataset_key=dataset_key,
+            **custom_namespaces,
+        ).apply(build_dataset_data)
+
+        export(f"dataset_data/{name}", dataset_data)
 
         pulumi_s3.BucketObjectv2(
             f"{name}-metadata-json",
             bucket=bucket,
             key=dataset_key,
-            content=json.dumps(metadata),
+            content=dataset_data.apply(json.dumps),
             content_type="text/json",
             opts=opts,
-            tags=self.tags,
+            tags=self.tags,  # add market's tags
         )
+        return dataset_data
 
-        #
-        # do other stuff with the configuration...
-
-        return Output.all()
-
-    def get_dataset(self, producer_name: str, name: str):
+    def get_dataset(self, producer_name: str, dataset_name: str):
         dataset_key = self.get_dataset_metadata_key(
-            dataset_name=name, producer_name=producer_name
+            producer_name=producer_name, dataset_name=dataset_name
         )
-        return _read_s3_json(self.metadata["bucket"], dataset_key)
+        return _read_s3_json(self.backend_configuration["bucket"], dataset_key)
 
 
 def _read_s3_json(bucket: str, key: str) -> Dict[str, Any]:

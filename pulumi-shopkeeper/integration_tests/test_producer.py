@@ -58,3 +58,13 @@ def pumpkin_producer(veg_market_backend):
 def test_pumpkin_producer(pumpkin_producer):
     # get the producer metadata with boto
     assert 1 == 1
+
+
+# test for a producer with a subtly broken backend
+
+# test for deploying a producer to somewhere where there already is a producer?
+
+
+# test for a dataset with a producer that doesn't exist
+
+# test for a dataset with a producer that does exist
