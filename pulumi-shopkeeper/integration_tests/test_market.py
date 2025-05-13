@@ -79,7 +79,10 @@ def veg_market_backend(market_backend_declaration, pytestconfig):
 
 
 def test_veg_market_backend_type(veg_market_backend, market_backend_declaration):
-    assert veg_market_backend.backend_type == market_backend_declaration["backend_type"]
+    assert (
+        veg_market_backend.backend_configuration["backend_type"]
+        == market_backend_declaration["backend_type"]
+    )
 
 
 def test_veg_market_backend_bucket_prefix(
@@ -88,42 +91,3 @@ def test_veg_market_backend_bucket_prefix(
     assert veg_market_backend.backend_configuration["bucket"].startswith(
         market_backend_declaration["bucket_prefix"]
     )
-
-
-pumpkin_producer_name = "pumpkintown"
-pumpkin_producer_metadata = {"product_owner": "pete@pumpkintown.com"}
-
-
-@pytest.fixture()
-def pumpkin_producer(veg_market_backend):
-    def declare_pumpkin_producer():
-        p = market.Producer(
-            name=pumpkin_producer_name,
-            args=market.ProducerArgs(
-                backend_type=veg_market_backend["metadata"]["backend_type"],
-                backend_configuration=veg_market_backend["metadata"][
-                    "backend_configuration"
-                ],
-                metadata=pumpkin_producer_metadata,
-                tags=tags,
-            ),
-        )
-
-    stack = pulumi.automation.create_or_select_stack(
-        stack_name=f"pytest-{backend_type.replace(':', '-')}-{pumpkin_producer_name}",
-        project_name="test-infra",
-        program=declare_pumpkin_producer,
-    )
-
-    up_result = stack.up()
-    logger.info(f"pulumi: {up_result.summary.message}")
-
-    return pumpkin_producer_name
-
-
-def test_pumpkin_producer(pumpkin_producer):
-    # get the producer metadata with boto
-    producer_metadata = market_backend.get_producer(pumpkin_producer_name)
-    logger.info(f"producer_metadata: {producer_metadata}")
-
-    assert producer_metadata == pumpkin_producer_metadata

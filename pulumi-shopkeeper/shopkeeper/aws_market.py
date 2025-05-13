@@ -41,18 +41,31 @@ class AWSMarketBackend(market.MarketBackend):
 
     SUPPORTED_BACKEND_TYPES = ["aws:v1", "aws:latest"]
 
-    def __init__(self, bucket, market_metadata_key, tags=None):
-        metadata_json_data = _read_s3_json(bucket=bucket, key=market_metadata_key)
+    def __init__(
+        self,
+        backend_type,
+        bucket,
+        market_metadata_key,
+        tags: Optional[Dict] = None,
+        **kwargs,
+    ):
+        market_data = _read_s3_json(bucket=bucket, key=market_metadata_key)
+        backend_configuration = {
+            "backend_type": backend_type,
+            "bucket": bucket,
+            "market_metadata_key": market_metadata_key,
+        }
+        assert market_data["backend_configuration"] == backend_configuration
 
-        # TODO I think these properties are required for all backends...
+        # merge tags from market data with client provided tags
+        merged_tags = market_data["tags"] or {}
+        merged_tags.update(tags or {})
+
         super().__init__(
-            name=metadata_json_data.pop("name"),
-            backend_type=metadata_json_data.pop("backend_type"),
-            backend_configuration=metadata_json_data.pop("backend_configuration"),
-            tags=tags,  # client can set their own tags
+            name=market_data["name"],
+            backend_configuration=backend_configuration,
+            tags=merged_tags,  # client can set their own tags
         )
-        # slap on the the extra stuff
-        self.metadata = metadata_json_data
 
     @classmethod
     def declare(
@@ -112,6 +125,7 @@ class AWSMarketBackend(market.MarketBackend):
         export(
             "backend_configuration",
             Output.all(
+                backend_type=backend_type,
                 bucket=bucket.bucket,
                 market_metadata_key=Output.from_input(market_metadata_key),
             ),
@@ -124,10 +138,10 @@ class AWSMarketBackend(market.MarketBackend):
                 "region": d["region"],
                 "bucket": d["bucket"],
                 "bucket_url": f"https://s3.{d['region']}.amazonaws.com/{d['bucket']}/",
-                "backend_type": backend_type,
                 "backend_configuration": {
+                    "backend_type": backend_type,
                     "bucket": d["bucket"],
-                    "metadata_key": market_metadata_key,
+                    "market_metadata_key": market_metadata_key,
                 },
                 "bucket_arn": d["bucket_arn"],
                 "tags": tags,
@@ -177,11 +191,11 @@ class AWSMarketBackend(market.MarketBackend):
 
         producer_data = Output.all(
             name=name,
-            bucket=bucket,
             producer_key=producer_key,
-            tags=self.tags,
             **custom_namespaces,
         ).apply(build_producer_data)
+
+        export(f"producer_data/{name}", producer_data)
 
         pulumi_s3.BucketObjectv2(
             f"{name}-metadata-json",
@@ -196,7 +210,7 @@ class AWSMarketBackend(market.MarketBackend):
 
     def get_producer(self, name: str):
         producer_key = self.get_producer_metadata_key(name)
-        return _read_s3_json(self.metadata["bucket"], producer_key)
+        return _read_s3_json(self.backend_configuration["bucket"], producer_key)
 
     def declare_dataset(
         self,

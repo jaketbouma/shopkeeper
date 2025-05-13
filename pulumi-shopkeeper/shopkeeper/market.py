@@ -25,12 +25,10 @@ class MarketBackend(ABC):
     def __init__(
         self,
         name: str,
-        backend_type: str,
         backend_configuration: Dict[str, Any],
         tags=None,
     ):
         self.name = name
-        self.backend_type = backend_type
         self.backend_configuration = backend_configuration
         self.tags = tags
 
@@ -167,14 +165,16 @@ class Producer(ComponentResource):
     ) -> None:
         super().__init__("pulumi-shopkeeper:index:Producer", name, args, opts)
 
-        backend = backend_factory.get(backend_type=args.get("backend_type"))(
-            tags=args.get("tags"),
-            **args.get("backend_configuration"),  # type:ignore
-        )
-        p = backend.declare_producer(
-            name=name, metadata=args.get("metadata"), opts=ResourceOptions(parent=self)
-        )
-        print(p)
+        # check if args["backend_configuration"] is awaitable
+        if inspect.isawaitable(args["backend_configuration"]):
+            raise NotImplementedError("Input dependencies not yet implemented.")
+
+        # declare the backend
+        backend = backend_factory.get(
+            args["backend_configuration"]["backend_type"]  # type:ignore
+        )(**args.get("backend_configuration"))  # type: ignore
+
+        backend.declare_producer(name=name, opts=ResourceOptions(parent=self), **args)
 
 
 class DatasetArgs(TypedDict):
