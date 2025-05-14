@@ -79,6 +79,9 @@ def test_pumpkin_producer_wrong_name(veg_market_backend):
 
 
 # test for deploying a producer to somewhere where there already is a producer?
+@pytest.mark.skip(
+    reason="Open Pulumi issue: BucketObjectV2 does overwrite without error"
+)
 def test_conflict_with_pumpkin_producer(veg_market_backend, pumpkin_producer):
     backend_type = veg_market_backend.backend_configuration["backend_type"]
     producer_name = pumpkin_producer["name"]
@@ -109,5 +112,6 @@ def test_conflict_with_pumpkin_producer(veg_market_backend, pumpkin_producer):
 
 
 # test for a dataset with a producer that doesn't exist
+
 
 # test for a dataset with a producer that does exist

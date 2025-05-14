@@ -7,7 +7,7 @@ import boto3
 from pulumi import Output, ResourceOptions, export
 from pulumi_aws import s3 as pulumi_s3
 
-from shopkeeper.backend import MarketBackend
+from shopkeeper.backend_interface import MarketBackend
 
 # Laziness, for now.
 os.environ["AWS_PROFILE"] = "platform"
@@ -196,7 +196,7 @@ class AWSMarketBackend(MarketBackend):
             **custom_namespaces,
         ).apply(build_producer_data)
 
-        export(f"producer_data/{name}", producer_data)
+        # export(f"producer_data/{name}", producer_data)  #     error: pulumi-shopkeeper:index:Producer resource 'pumpkintown' has a problem: Unexpected <class 'Exception'>: Failed to export output. Root resource is not an instance of 'Stack':
         content = producer_data.apply(json.dumps)
         import hashlib
 

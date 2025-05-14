@@ -1,5 +1,5 @@
 from shopkeeper.aws_market import AWSMarketBackend  # noqa F401
-from shopkeeper.market import MarketBackend  # noqa F401
+from shopkeeper.backend_interface import MarketBackend  # noqa F401
 from typing import Type
 
 
