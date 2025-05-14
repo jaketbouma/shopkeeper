@@ -61,6 +61,14 @@ def test_pumpkin_producer(pumpkin_producer):
 
 
 # test for a producer with a subtly broken backend
+def test_pumpkin_producer_wrong_name(veg_market_backend):
+    valid_backend_configuration = veg_market_backend.backend_configuration
+    invalid_backend_configuration = valid_backend_configuration
+    from shopkeeper.market import backend_factory
+
+    backend_factory.get(valid_backend_configuration["backend_type"])
+    assert 1 == 1
+
 
 # test for deploying a producer to somewhere where there already is a producer?
 

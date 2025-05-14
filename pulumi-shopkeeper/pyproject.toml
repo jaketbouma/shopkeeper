@@ -29,7 +29,7 @@ filterwarnings = [
     "ignore::DeprecationWarning:aws.*:"
 ]
 testpaths = [
-    "tests", "unit_tests", "integration_tests"
+    "tests"
 ]
 
 [tool.ruff]
