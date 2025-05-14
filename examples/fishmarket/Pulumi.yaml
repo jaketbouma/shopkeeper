@@ -1,0 +1,32 @@
+# Set up the markets
+runtime: yaml
+name: fishmarket
+
+packages:
+  pulumi-shopkeeper:
+    source: ../../pulumi-shopkeeper
+    version: 0.0.0
+
+resources:
+  fishmarketDev:
+    type: pulumi-shopkeeper:Market
+    properties:
+      description: Fishmarket (dev)
+      backendDeclaration:
+        backend_type: aws:latest
+        bucket_prefix: fishmarket-dev
+      tags:
+        environment: test
+
+  fishmarketProd:
+    type: pulumi-shopkeeper:Market
+    properties:
+      description: Fishmarket (Prod)
+      backendDeclaration:
+        backend_type: aws:latest
+        bucket_prefix: fishmarket-prod
+      tags:
+        environment: prod
+ 
+outputs:
+  fishmarketProdUrn: ${fishmarketProd.marketData}

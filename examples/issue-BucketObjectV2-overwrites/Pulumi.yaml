@@ -1,0 +1,45 @@
+#
+# This program shows some unexpected behaviour with the BucketObjectV2 resource.
+
+name: conflicting-stack-001
+runtime: yaml
+
+variables:
+  bucket: "aws-v1-veg20250513121719426600000001"
+  key: "/test/something-manually-uploaded.json"
+  # aws s3 cp ./something-manually-uploaded.json s3://aws-v1-veg20250513121719426600000001/test/                           ─╯
+
+packages:
+  pulumi-shopkeeper:
+    source: ../../pulumi-shopkeeper
+    version: 0.0.0
+
+resources:
+  random-data:
+    type: aws:s3:BucketObjectv2
+    properties:
+      bucket: ${bucket}
+      key: ${key}
+      content: "Noooo!"
+      contentType: "text/json"
+      etag:
+        fn::invoke:
+          function: std:md5
+          arguments:
+            input: "Noooo!"
+          return: result
+
+  
+  more-random-data:
+    type: aws:s3:BucketObjectv2
+    properties:
+      bucket: ${bucket}
+      key: ${key}
+      content: "Noooo! Please nooo!"
+      contentType: "text/json"
+      etag:
+        fn::invoke:
+          function: std:md5
+          arguments:
+            input: "Noooo! Please nooo!"
+          return: result

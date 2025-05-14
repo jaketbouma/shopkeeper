@@ -1,0 +1,5 @@
+config:
+  ships:environment: dev
+  ships:market_backend_configuration: 
+    bucket: 
+    market_metadata_key: 

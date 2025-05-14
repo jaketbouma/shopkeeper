@@ -5,7 +5,7 @@ import pulumi
 import pytest
 
 import shopkeeper.market as market
-from shopkeeper import aws_market
+from shopkeeper import aws_market, backend_factory
 
 os.environ["AWS_PROFILE"] = "platform"
 
@@ -33,17 +33,16 @@ def market_backend_declaration(request):
 
 
 @pytest.fixture()
-def veg_market_backend(market_backend_declaration, pytestconfig):
+def veg_market_data(market_backend_declaration, pytestconfig):
     backend_type = market_backend_declaration["backend_type"]
 
-    cache_key = f"veg_market_backend/{backend_type}"
+    cache_key = f"veg_market_data/{backend_type}"
 
     # use a cached backend
-    backend_configuration = pytestconfig.cache.get(cache_key, None)
-    if backend_configuration is not None:
-        logger.info(f"Using cached backend_configuration: {backend_configuration}")
-        new_backend = market.backend_factory.get(backend_type)(**backend_configuration)
-        return new_backend
+    market_data = pytestconfig.cache.get(cache_key, None)
+    if market_data is not None:
+        logger.info(f"Using cached backend_configuration: {market_data}")
+        return market_data
 
     # otherwise, declare stack and run pulumi up
     logger.info(f"Declaring backend: {market_backend_declaration}")
@@ -52,7 +51,7 @@ def veg_market_backend(market_backend_declaration, pytestconfig):
         """
         A simple inline pulumi program to declare a market
         """
-        market.Market(
+        m = market.Market(
             name="veg-market",
             args=market.MarketArgs(
                 description="Fresh and nutritious vegetables",
@@ -61,33 +60,51 @@ def veg_market_backend(market_backend_declaration, pytestconfig):
             ),
             opts=None,
         )
+        pulumi.export("market_data", m.market_data)
 
     stack = pulumi.automation.create_or_select_stack(
         stack_name=f"pytest-{backend_type.replace(':', '--')}",
         project_name="test-infra",
         program=declare_veg_market,
     )
+    stack.cancel()
     up_result = stack.up()
     logger.info(f"pulumi: {up_result.summary}")
 
     # update the cache
-    backend_configuration = up_result.outputs["backend_configuration"].value
-    pytestconfig.cache.set(cache_key, backend_configuration)
+    market_data = up_result.outputs["market_data"].value
+    pytestconfig.cache.set(cache_key, market_data)
 
-    new_backend = market.backend_factory.get(backend_type)(**backend_configuration)
+    return market_data
+
+
+@pytest.fixture()
+def veg_market_backend(veg_market_data):
+    new_backend = backend_factory.get(
+        veg_market_data["backend_configuration"]["backend_type"]
+    )(**veg_market_data["backend_configuration"])
     return new_backend
 
 
-def test_veg_market_backend_type(veg_market_backend, market_backend_declaration):
+def test_market_backend_initialization(veg_market_backend, veg_market_data):
     assert (
-        veg_market_backend.backend_configuration["backend_type"]
+        veg_market_backend.backend_configuration
+        == veg_market_data["backend_configuration"]
+    )
+    assert (
+        veg_market_backend.backend_configuration
+        == veg_market_data["backend_configuration"]
+    )
+
+
+def test_veg_market_backend_type(veg_market_data, market_backend_declaration):
+    assert (
+        veg_market_data["backend_configuration"]["backend_type"]
         == market_backend_declaration["backend_type"]
     )
 
 
-def test_veg_market_backend_bucket_prefix(
-    veg_market_backend, market_backend_declaration
-):
-    assert veg_market_backend.backend_configuration["bucket"].startswith(
+def test_veg_market_bucket_prefix(veg_market_data, market_backend_declaration):
+    assert veg_market_data["backend_configuration"]["bucket"].startswith(
         market_backend_declaration["bucket_prefix"]
     )

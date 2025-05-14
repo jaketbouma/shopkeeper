@@ -4,10 +4,10 @@ import os
 from typing import Any, Dict, Optional
 
 import boto3
-from pulumi import Output, ResourceOptions, export
+from pulumi import Output, ResourceOptions
 from pulumi_aws import s3 as pulumi_s3
 
-import shopkeeper.market as market
+from shopkeeper.backend_interface import MarketBackend
 
 # Laziness, for now.
 os.environ["AWS_PROFILE"] = "platform"
@@ -17,7 +17,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-class AWSMarketBackend(market.MarketBackend):
+class AWSMarketBackend(MarketBackend):
     """
     A client to interact with the marketplace to;
     1. "declare" markets, producers, consumers and datasets with pulumi-aws
@@ -55,6 +55,7 @@ class AWSMarketBackend(market.MarketBackend):
             "bucket": bucket,
             "market_metadata_key": market_metadata_key,
         }
+
         assert market_data["backend_configuration"] == backend_configuration
 
         # merge tags from market data with client provided tags
@@ -122,14 +123,14 @@ class AWSMarketBackend(market.MarketBackend):
         )
 
         # directly export to pulumi program
-        export(
-            "backend_configuration",
-            Output.all(
-                backend_type=backend_type,
-                bucket=bucket.bucket,
-                market_metadata_key=Output.from_input(market_metadata_key),
-            ),
-        )
+        # export(
+        #    "backend_configuration",
+        #    Output.all(
+        #        backend_type=backend_type,
+        #        bucket=bucket.bucket,
+        #        market_metadata_key=Output.from_input(market_metadata_key),
+        #    ),
+        # )
 
         # build the data structure for the metadata file for the market
         def build_json_metadata(d: Dict):
@@ -195,16 +196,20 @@ class AWSMarketBackend(market.MarketBackend):
             **custom_namespaces,
         ).apply(build_producer_data)
 
-        export(f"producer_data/{name}", producer_data)
+        # export(f"producer_data/{name}", producer_data)  #     error: pulumi-shopkeeper:index:Producer resource 'pumpkintown' has a problem: Unexpected <class 'Exception'>: Failed to export output. Root resource is not an instance of 'Stack':
+        content = producer_data.apply(json.dumps)
+        import hashlib
 
+        etag = content.apply(lambda s: hashlib.md5(s.encode()).hexdigest())
         pulumi_s3.BucketObjectv2(
             f"{name}-metadata-json",
             bucket=bucket,
             key=producer_key,
-            content=producer_data.apply(json.dumps),
+            content=content,
             content_type="text/json",
             opts=opts,
             tags=self.tags,  # add market's tags
+            etag=etag,
         )
         return producer_data
 
@@ -230,7 +235,7 @@ class AWSMarketBackend(market.MarketBackend):
             **custom_namespaces,
         ).apply(build_dataset_data)
 
-        export(f"dataset_data/{name}", dataset_data)
+        # export(f"dataset_data/{name}", dataset_data)
 
         pulumi_s3.BucketObjectv2(
             f"{name}-metadata-json",
@@ -258,7 +263,3 @@ def _read_s3_json(bucket: str, key: str) -> Dict[str, Any]:
     byte_content = response["Body"].read()
     content = byte_content.decode("utf-8")
     return json.loads(content)
-
-
-market.backend_factory.register("aws:v1", AWSMarketBackend)
-market.backend_factory.register("aws:latest", AWSMarketBackend)
