@@ -4,7 +4,7 @@ import os
 from typing import Any, Dict, Optional
 
 import boto3
-from pulumi import Output, ResourceOptions, export
+from pulumi import Output, ResourceOptions
 from pulumi_aws import s3 as pulumi_s3
 
 from shopkeeper.backend_interface import MarketBackend
@@ -123,14 +123,14 @@ class AWSMarketBackend(MarketBackend):
         )
 
         # directly export to pulumi program
-        export(
-            "backend_configuration",
-            Output.all(
-                backend_type=backend_type,
-                bucket=bucket.bucket,
-                market_metadata_key=Output.from_input(market_metadata_key),
-            ),
-        )
+        # export(
+        #    "backend_configuration",
+        #    Output.all(
+        #        backend_type=backend_type,
+        #        bucket=bucket.bucket,
+        #        market_metadata_key=Output.from_input(market_metadata_key),
+        #    ),
+        # )
 
         # build the data structure for the metadata file for the market
         def build_json_metadata(d: Dict):
@@ -235,7 +235,7 @@ class AWSMarketBackend(MarketBackend):
             **custom_namespaces,
         ).apply(build_dataset_data)
 
-        export(f"dataset_data/{name}", dataset_data)
+        # export(f"dataset_data/{name}", dataset_data)
 
         pulumi_s3.BucketObjectv2(
             f"{name}-metadata-json",

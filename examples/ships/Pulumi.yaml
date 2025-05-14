@@ -1,0 +1,26 @@
+name: ships
+runtime: yaml
+description: Ships that come into harbour to sell fish to the market
+
+packages:
+  pulumi-shopkeeper:
+    source: ../../pulumi-shopkeeper
+    version: 0.0.0
+
+resources:
+  shrimp-boat:
+    type: pulumi-shopkeeper:Producer
+    properties:
+      description: Fresh shrimp daily in the summer
+      backendConfiguration: ${market_backend_configuration}
+      tags:
+        food: shellfish
+  fisherman-fred:
+    type: pulumi-shopkeeper:Producer
+    properties:
+      description: Fresh fish each week
+      backendConfiguration: ${market_backend_configuration}
+      tags:
+        food: fish
+outputs:
+  environment: ${environment}

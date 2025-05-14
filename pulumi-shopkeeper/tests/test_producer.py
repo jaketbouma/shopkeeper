@@ -11,6 +11,7 @@ from shopkeeper.market import backend_factory
 from .test_market import (  # noqa: F401
     market_backend_declaration,
     veg_market_backend,
+    veg_market_data,
 )
 
 os.environ["AWS_PROFILE"] = "platform"

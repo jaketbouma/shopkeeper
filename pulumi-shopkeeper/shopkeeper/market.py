@@ -36,8 +36,7 @@ class Market(ComponentResource):
     Pulumi component resource declaring a market.
     """
 
-    backend_type: Output[str]
-    backend_configuration: Output[Dict[str, Any]]
+    market_data: Output[Dict[str, Any]]
 
     def __init__(
         self,
@@ -45,7 +44,7 @@ class Market(ComponentResource):
         args: MarketArgs,
         opts: Optional[ResourceOptions] = None,
     ) -> None:
-        super().__init__("pulumi-shopkeeper:index:Market", name, args, opts)
+        super().__init__("pulumi-shopkeeper:index:Market", name, None, opts)
 
         # check if args["backend_declaration"] is awaitable
         if inspect.isawaitable(args["backend_declaration"]):
@@ -57,13 +56,12 @@ class Market(ComponentResource):
         Backend = backend_factory.get(
             args["backend_declaration"]["backend_type"]  # type:ignore
         )
-        Backend.declare(
+        self.market_data = Backend.declare(
             name=name,
             opts=opts,
             **args,
         )
-
-        self.register_outputs({})
+        self.register_outputs({"market_data": self.market_data})
 
 
 class ProducerArgs(TypedDict):
@@ -92,6 +90,9 @@ class Producer(ComponentResource):
         # check if args["backend_configuration"] is awaitable
         if inspect.isawaitable(args["backend_configuration"]):
             raise NotImplementedError("Input dependencies not yet implemented.")
+
+        if "backend_type" not in args["backend_configuration"]:
+            raise KeyError("backend_type is required in backend_configuration")
 
         # declare the backend
         backend = backend_factory.get(
