@@ -7,7 +7,7 @@ import boto3
 from pulumi import Output, ResourceOptions, export
 from pulumi_aws import s3 as pulumi_s3
 
-import shopkeeper.market as market
+from shopkeeper.backend import MarketBackend
 
 # Laziness, for now.
 os.environ["AWS_PROFILE"] = "platform"
@@ -17,7 +17,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-class AWSMarketBackend(market.MarketBackend):
+class AWSMarketBackend(MarketBackend):
     """
     A client to interact with the marketplace to;
     1. "declare" markets, producers, consumers and datasets with pulumi-aws
@@ -55,6 +55,7 @@ class AWSMarketBackend(market.MarketBackend):
             "bucket": bucket,
             "market_metadata_key": market_metadata_key,
         }
+
         assert market_data["backend_configuration"] == backend_configuration
 
         # merge tags from market data with client provided tags
@@ -196,15 +197,19 @@ class AWSMarketBackend(market.MarketBackend):
         ).apply(build_producer_data)
 
         export(f"producer_data/{name}", producer_data)
+        content = producer_data.apply(json.dumps)
+        import hashlib
 
+        etag = content.apply(lambda s: hashlib.md5(s.encode()).hexdigest())
         pulumi_s3.BucketObjectv2(
             f"{name}-metadata-json",
             bucket=bucket,
             key=producer_key,
-            content=producer_data.apply(json.dumps),
+            content=content,
             content_type="text/json",
             opts=opts,
             tags=self.tags,  # add market's tags
+            etag=etag,
         )
         return producer_data
 
@@ -258,7 +263,3 @@ def _read_s3_json(bucket: str, key: str) -> Dict[str, Any]:
     byte_content = response["Body"].read()
     content = byte_content.decode("utf-8")
     return json.loads(content)
-
-
-market.backend_factory.register("aws:v1", AWSMarketBackend)
-market.backend_factory.register("aws:latest", AWSMarketBackend)

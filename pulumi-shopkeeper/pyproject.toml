@@ -10,6 +10,7 @@ python = "^3.9"
 pulumi = "^3.167.0"
 pulumi-aws = "^6.79.2"
 boto3 = "^1.38.8"
+pulumi-std = "^2.2.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3"

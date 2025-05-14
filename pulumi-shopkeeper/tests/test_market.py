@@ -5,7 +5,7 @@ import pulumi
 import pytest
 
 import shopkeeper.market as market
-from shopkeeper import aws_market
+from shopkeeper import aws_market, backend_factory
 
 os.environ["AWS_PROFILE"] = "platform"
 
@@ -42,7 +42,7 @@ def veg_market_backend(market_backend_declaration, pytestconfig):
     backend_configuration = pytestconfig.cache.get(cache_key, None)
     if backend_configuration is not None:
         logger.info(f"Using cached backend_configuration: {backend_configuration}")
-        new_backend = market.backend_factory.get(backend_type)(**backend_configuration)
+        new_backend = backend_factory.get(backend_type)(**backend_configuration)
         return new_backend
 
     # otherwise, declare stack and run pulumi up
@@ -74,7 +74,7 @@ def veg_market_backend(market_backend_declaration, pytestconfig):
     backend_configuration = up_result.outputs["backend_configuration"].value
     pytestconfig.cache.set(cache_key, backend_configuration)
 
-    new_backend = market.backend_factory.get(backend_type)(**backend_configuration)
+    new_backend = backend_factory.get(backend_type)(**backend_configuration)
     return new_backend
 
 

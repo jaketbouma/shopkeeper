@@ -6,6 +6,7 @@ import pytest
 
 import shopkeeper.market as market
 from shopkeeper import aws_market
+from shopkeeper.market import backend_factory
 
 from .test_market import (  # noqa: F401
     market_backend_declaration,
@@ -47,7 +48,7 @@ def pumpkin_producer(veg_market_backend):
         project_name="test-infra",
         program=declare_pumpkin_producer,
     )
-
+    stack.refresh(on_output=print)
     up_result = stack.up()
     logger.info(f"pulumi: {up_result.summary.message}")
 
@@ -64,13 +65,47 @@ def test_pumpkin_producer(pumpkin_producer):
 def test_pumpkin_producer_wrong_name(veg_market_backend):
     valid_backend_configuration = veg_market_backend.backend_configuration
     invalid_backend_configuration = valid_backend_configuration
-    from shopkeeper.market import backend_factory
 
-    backend_factory.get(valid_backend_configuration["backend_type"])
-    assert 1 == 1
+    B = backend_factory.get(valid_backend_configuration["backend_type"])
+
+    with pytest.raises(Exception):
+        invalid_backend_configuration = valid_backend_configuration
+        invalid_backend_configuration["backend_type"] = "Nonsense"
+        B(**invalid_backend_configuration)
+    with pytest.raises(Exception):
+        invalid_backend_configuration = valid_backend_configuration
+        invalid_backend_configuration["bucket"] = "Nonsense"
+        B(**invalid_backend_configuration)
 
 
 # test for deploying a producer to somewhere where there already is a producer?
+def test_conflict_with_pumpkin_producer(veg_market_backend, pumpkin_producer):
+    backend_type = veg_market_backend.backend_configuration["backend_type"]
+    producer_name = pumpkin_producer["name"]
+
+    def declare_pumpkin_producer():
+        market.Producer(
+            name=producer_name,
+            args=market.ProducerArgs(
+                description="Duplicate delicious pumpkins",
+                backend_configuration=veg_market_backend.backend_configuration,
+                tags=tags,
+            ),
+            opts=None,
+        )
+
+    stack = pulumi.automation.create_or_select_stack(
+        stack_name=f"pytest-{backend_type.replace(':', '-')}-{producer_name}-duplicate",
+        project_name="test-infra",
+        program=declare_pumpkin_producer,
+    )
+    stack.refresh(on_output=print)
+
+    up_result = stack.up()
+    logger.info(f"pulumi: {up_result.summary.message}")
+
+    new_producer = veg_market_backend.get_producer(producer_name)
+    return new_producer
 
 
 # test for a dataset with a producer that doesn't exist
