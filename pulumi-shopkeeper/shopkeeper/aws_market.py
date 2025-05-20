@@ -147,6 +147,7 @@ class AWSMarketBackend(MarketBackend):
                 "bucket_arn": d["bucket_arn"],
                 "tags": tags,
                 **custom_namespaces,
+                # TODO: bombs when custom_namespaces is not json serializable!
             }
 
         metadata_content = Output.all(

@@ -28,7 +28,8 @@ class MarketArgs(TypedDict):
     backend_declaration: Optional[
         Input[Dict[str, Any]]
     ]  # complex types are not yet supported
-    tags: Input[Dict[str, str]]
+    tags: Optional[Input[Dict[str, str]]]
+    extensions: Optional[Input[Dict[str, Dict[str, str]]]]
 
 
 class Market(ComponentResource):
@@ -44,7 +45,7 @@ class Market(ComponentResource):
         args: MarketArgs,
         opts: Optional[ResourceOptions] = None,
     ) -> None:
-        super().__init__("pulumi-shopkeeper:index:Market", name, None, opts)
+        super().__init__("pulumi-shopkeeper:index:Market", name, props={}, opts=opts)
 
         # check if args["backend_declaration"] is awaitable
         if inspect.isawaitable(args["backend_declaration"]):
@@ -52,16 +53,14 @@ class Market(ComponentResource):
                 "Input dependencies not yet implemented. Throw something back at a developer."
             )
 
-        # declare the backend
         Backend = backend_factory.get(
             args["backend_declaration"]["backend_type"]  # type:ignore
         )
         self.market_data = Backend.declare(
             name=name,
-            opts=opts,
             **args,
         )
-        self.register_outputs({"market_data": self.market_data})
+        self.register_outputs({"marketData": self.market_data})
 
 
 class ProducerArgs(TypedDict):

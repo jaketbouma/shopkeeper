@@ -1,6 +1,7 @@
 # Set up the markets
 runtime: yaml
 name: fishmarket
+description: blah
 
 packages:
   pulumi-shopkeeper:
@@ -13,20 +14,22 @@ resources:
     properties:
       description: Fishmarket (dev)
       backendDeclaration:
-        backend_type: aws:latest
+        backend_type: "aws:latest"
         bucket_prefix: fishmarket-dev
-      tags:
-        environment: test
+      extensions:
+        fishmarket_properties_v1:
+          fishmonger: "John"
+          address: "1 Fish Road, Splashtown, 0001"
 
-  fishmarketProd:
-    type: pulumi-shopkeeper:Market
-    properties:
-      description: Fishmarket (Prod)
-      backendDeclaration:
-        backend_type: aws:latest
-        bucket_prefix: fishmarket-prod
-      tags:
-        environment: prod
+#  fishmarketProd:
+#    type: pulumi-shopkeeper:Market
+#    properties:
+#      description: Fishmarket (Prod)
+#      backendDeclaration:
+#        backend_type: aws:latest
+#        bucket_prefix: fishmarket-prod
+#      tags:
+#        environment: prod
  
 outputs:
-  fishmarketProdUrn: ${fishmarketProd.marketData}
+  anything: ${fishmarketDev.marketData}
