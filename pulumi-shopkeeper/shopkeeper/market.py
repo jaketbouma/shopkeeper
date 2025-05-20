@@ -48,13 +48,20 @@ class Market(ComponentResource):
                 "Input dependencies not yet implemented. Throw something back at a developer."
             )
 
+        # ensure that parent is passed through
+        opts = ResourceOptions.merge(ResourceOptions(parent=self), opts)
+
+        # declare the market backend
         Backend = backend_factory.get(
             args["backend_declaration"]["backend_type"]  # type:ignore
         )
-        self.market_data = Backend.declare(
+        self.market_data = Backend.declare_market(
             name=name,
-            **args,
+            args=args,
+            opts=opts,
         )
+
+        # wrap up, exposing the result of the declaration
         self.register_outputs({"marketData": self.market_data})
 
 
@@ -65,13 +72,16 @@ class ProducerArgs(TypedDict):
 
     description: Input[str]
     backend_configuration: Input[Dict[str, Any]]
-    tags: Input[Dict[str, str]]
+    tags: Optional[Input[Dict[str, str]]]
+    extensions: Optional[Input[Dict[str, Dict[str, str]]]]
 
 
 class Producer(ComponentResource):
     """
     Pulumi component resource declaring a producer.
     """
+
+    market_data: Output[Dict[str, Any]]
 
     def __init__(
         self,
@@ -88,12 +98,24 @@ class Producer(ComponentResource):
         if "backend_type" not in args["backend_configuration"]:
             raise KeyError("backend_type is required in backend_configuration")
 
-        # declare the backend
-        backend = backend_factory.get(
-            args["backend_configuration"]["backend_type"]  # type:ignore
-        )(**args.get("backend_configuration"))  # type: ignore
+        # ensure that parent is passed through
+        opts = ResourceOptions.merge(ResourceOptions(parent=self), opts)
 
-        backend.declare_producer(name=name, opts=ResourceOptions(parent=self), **args)
+        # initialize the backend
+        Backend = backend_factory.get(
+            args["backend_configuration"]["backend_type"]  # type:ignore
+        )
+        backend = Backend(**args.get("backend_configuration"))  # type: ignore
+
+        # declare the producer
+        self.producer_data = backend.declare_producer(
+            name=name,
+            args=args,
+            opts=opts,
+        )
+
+        # wrap up
+        self.register_outputs({"producerData": self.producer_data})
 
 
 class DatasetArgs(TypedDict):

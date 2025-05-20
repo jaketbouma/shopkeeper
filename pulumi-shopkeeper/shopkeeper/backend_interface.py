@@ -33,9 +33,7 @@ class MarketBackend(ABC):
 
     @classmethod
     @abstractmethod
-    def declare(
-        cls, name, backend_declaration, tags=None, **custom_namespaces
-    ) -> Output[Dict]:
+    def declare_market(cls, name, args, opts=None) -> Output[Dict]:
         pass
 
     @abstractmethod

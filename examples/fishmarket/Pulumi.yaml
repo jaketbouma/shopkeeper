@@ -1,7 +1,7 @@
 # Set up the markets
 runtime: yaml
 name: fishmarket
-description: blah
+description: A place for fisherfolk to sell their catch.
 
 packages:
   pulumi-shopkeeper:
