@@ -1,12 +1,7 @@
 import inspect
-import os
 from typing import Any, Dict, Optional, TypedDict
 
 from pulumi import ComponentResource, Input, Output, ResourceOptions
-
-# Laziness, for now.
-os.environ["AWS_PROFILE"] = "platform"
-
 
 from shopkeeper import backend_factory
 

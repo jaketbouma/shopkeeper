@@ -1,6 +1,5 @@
 import json
 import logging
-import os
 from typing import Any, Dict, Optional
 
 import boto3
@@ -8,9 +7,6 @@ from pulumi import Output, ResourceOptions
 from pulumi_aws import s3 as pulumi_s3
 
 from shopkeeper.backend_interface import MarketBackend
-
-# Laziness, for now.
-os.environ["AWS_PROFILE"] = "platform"
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
