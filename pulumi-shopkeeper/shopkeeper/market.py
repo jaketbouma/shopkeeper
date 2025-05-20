@@ -16,12 +16,12 @@ class MarketArgs(TypedDict):
     Arguments required to declare a new market.
 
     Attributes:
-        description (Input[str]): ...
-        backend_type (Input[str]): The type of backend for persisting and accessing metadata.
+        description (Input[str]): Description of the market.
         backend_declaration (Optional[Input[Dict[str, Any]]]): An optional dictionary containing
             additional configuration or declaration details for the backend.
-        tags (Input[Dict[str, str]]): A dictionary of key-value pairs used to tag the market
+        tags (Optional[Input[Dict[str, str]]]): A dictionary of key-value pairs used to tag the market
             with metadata.
+        extensions (Optional[Input[Dict[str, Dict[str, str]]]]): Optional dictionary for market extensions.
     """
 
     description: Input[str]

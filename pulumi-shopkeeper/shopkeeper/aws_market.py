@@ -72,21 +72,22 @@ class AWSMarketBackend(MarketBackend):
     def declare(
         cls,
         name,
+        description: str,
         backend_declaration: Dict[
             str, Any
         ],  # move to complex types when Pulumi supports it
         tags: Optional[Dict[str, str]] = None,
-        **custom_namespaces: Optional[Dict[str, Dict]],
+        extensions: Optional[Dict[str, Dict[str, str]]] = None,
     ) -> Output[Dict]:
         """
         Declares a market, creating a bucket and metadata file on S3
 
         Args:
             name (str): The name of the market.
-            backend_type (str): The type of backend to use (e.g., "aws:v1").
-            bucket_prefix (str): The prefix for the S3 bucket.
+            description (str): The description of the market.
+            backend_declaration (dict): Backend configuration including 'backend_type' and 'bucket_prefix'.
             tags (dict, optional): Tags to apply to the resources.
-            **metadata: Additional attributes of the market.
+            extensions (dict, optional): Additional extensions for the market.
         Returns:
             Output: Content of the market metadata file as a pulumi Output[Dict]
         """
@@ -122,20 +123,11 @@ class AWSMarketBackend(MarketBackend):
             opts=ResourceOptions(parent=bucket),
         )
 
-        # directly export to pulumi program
-        # export(
-        #    "backend_configuration",
-        #    Output.all(
-        #        backend_type=backend_type,
-        #        bucket=bucket.bucket,
-        #        market_metadata_key=Output.from_input(market_metadata_key),
-        #    ),
-        # )
-
         # build the data structure for the metadata file for the market
         def build_json_metadata(d: Dict):
             return {
                 "name": name,
+                "description": description,
                 "region": d["region"],
                 "bucket": d["bucket"],
                 "bucket_url": f"https://s3.{d['region']}.amazonaws.com/{d['bucket']}/",
@@ -146,8 +138,7 @@ class AWSMarketBackend(MarketBackend):
                 },
                 "bucket_arn": d["bucket_arn"],
                 "tags": tags,
-                **custom_namespaces,
-                # TODO: bombs when custom_namespaces is not json serializable!
+                "extensions": extensions,
             }
 
         metadata_content = Output.all(
