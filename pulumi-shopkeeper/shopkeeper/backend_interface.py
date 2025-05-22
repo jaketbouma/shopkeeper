@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 from pulumi import Output, ResourceOptions
 
@@ -8,7 +8,10 @@ from pulumi import Output, ResourceOptions
 @dataclass
 class MarketBackendDeclaration:
     backend_type: str
-    backend_opts: ResourceOptions
+    description: str
+    opts: Optional[ResourceOptions] = None
+    tags: Optional[Dict[str, str]] = None
+    extensions: Optional[Dict[str, Dict[str, str]]] = None
 
 
 @dataclass
@@ -17,14 +20,17 @@ class MarketBackendConfiguration:
     # ...subclasses can extend...
 
 
-@dataclass
+@dataclass(kw_only=True)
 class MarketData[T: MarketBackendConfiguration]:
     metadata_version: str
+    backend_configuration: T
     name: str
     description: str
-    backend_configuration: T
-    backend_tags: Dict[str, str]
+    backend_tags: Optional[Dict[str, str]] = None
+    extensions: Optional[Dict[str, Any]] = None
     # ...subclasses can extend...
+    # This will be used as Output[MarketData], which will quietly eat up any attributes starting with _ :scream:
+    # so don't name any attributes starting with _
 
 
 class MarketBackend[
@@ -41,6 +47,9 @@ class MarketBackend[
 
     metadata_version: str = "v1"
     _market_data: MarketData[MarketBackendConfigurationType]
+    BackendDeclaration: type[MarketBackendDeclaration]
+    BackendConfiguration: type[MarketBackendConfiguration]
+    MarketData: type[MarketData]
 
     @abstractmethod
     def __init__(

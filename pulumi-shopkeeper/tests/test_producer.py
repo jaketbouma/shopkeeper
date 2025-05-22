@@ -40,6 +40,7 @@ def pumpkin_producer(veg_market_backend):
                 description="Delicious pumpkins",
                 backend_configuration=veg_market_backend.backend_configuration,
                 tags=tags,
+                extensions=None,
             ),
             opts=None,
         )
@@ -57,7 +58,7 @@ def pumpkin_producer(veg_market_backend):
     return new_producer
 
 
-def test_pumpkin_producer(pumpkin_producer):
+def test_pumpkin_producer_initialization(pumpkin_producer):
     # get the producer metadata with boto
     assert 1 == 1
 
@@ -94,6 +95,7 @@ def test_conflict_with_pumpkin_producer(veg_market_backend, pumpkin_producer):
                 description="Duplicate delicious pumpkins",
                 backend_configuration=veg_market_backend.backend_configuration,
                 tags=tags,
+                extensions=None,
             ),
             opts=None,
         )

@@ -7,6 +7,8 @@ from typing import Any, Dict, Optional
 import boto3
 from pulumi import Output, ResourceOptions
 from pulumi_aws import s3 as pulumi_s3
+from serde import serde
+from serde.yaml import to_yaml
 
 from shopkeeper.backend_interface import (
     MarketBackend,
@@ -20,29 +22,26 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-@dataclass
+@dataclass(kw_only=True)
 class AWSBackendDeclaration(MarketBackendDeclaration):
-    bucket_prefix: str
-    bucket_tags: Optional[Dict[str, str]] = None
+    bucket_prefix: Optional[str] = None
 
 
-@dataclass
+@serde
+@dataclass(kw_only=True)
 class AWSBackendConfiguration(MarketBackendConfiguration):
     bucket: str
     market_metadata_key: str
 
 
-@dataclass
+@serde
+@dataclass(kw_only=True)
 class AWSMarketData(MarketData):
-    name: str
-    description: Optional[str]
+    backend_configuration: AWSBackendConfiguration
     region: str
     bucket: str
     bucket_url: str
-    backend_configuration: Dict[str, Any]
     bucket_arn: str
-    tags: Optional[Dict[str, str]] = None
-    extensions: Optional[Dict[str, Any]] = None
 
 
 class AWSMarketBackend(MarketBackend):
@@ -69,6 +68,9 @@ class AWSMarketBackend(MarketBackend):
 
     backend_configuration: AWSBackendConfiguration
     SUPPORTED_BACKEND_TYPES = ["aws:v1", "aws:latest"]
+    BackendConfiguration = AWSBackendConfiguration
+    BackendDeclaration = AWSBackendDeclaration
+    MarketData = AWSMarketData
 
     def __init__(
         self,
@@ -104,32 +106,24 @@ class AWSMarketBackend(MarketBackend):
         market_metadata_key = super().get_market_metadata_key(
             name=name,
         )
-        bucket_opts = opts
-        backend_declaration = AWSBackendDeclaration(**args.get("backend_declaration"))
 
         # default the bucket prefix to the resource name
-        bucket_prefix = backend_declaration.bucket_prefix
-        backend_type = backend_declaration.backend_type
-
-        # TODO: type safety
-        extensions = args.get("extensions", None)
-
-        if bucket_prefix is None:
-            bucket_prefix = name
+        if backend_declaration.bucket_prefix is None:
+            backend_declaration.bucket_prefix = name
 
         # this code supports a known list of backend types
-        if backend_type not in cls.SUPPORTED_BACKEND_TYPES:
+        if backend_declaration.backend_type not in cls.SUPPORTED_BACKEND_TYPES:
             raise Exception(
-                f"Backend type {backend_type} not supported by {cls.__name__}"
+                f"Backend type {backend_declaration.backend_type} not supported by {cls.__name__}"
             )
 
         # create bucket and set permissions
         bucket = pulumi_s3.BucketV2(
             f"{name}-bucket",
-            bucket_prefix=bucket_prefix,
+            bucket_prefix=backend_declaration.bucket_prefix,
             force_destroy=True,
-            opts=bucket_opts,
-            tags=args.get("tags", None),
+            opts=backend_declaration.opts,
+            tags=backend_declaration.tags,
         )
         pulumi_s3.BucketOwnershipControls(
             f"{name}-bucket-writer-owns",
@@ -141,40 +135,47 @@ class AWSMarketBackend(MarketBackend):
         )
 
         # build the data structure for the metadata file for the market
-        def build_json_metadata(d: Dict):
-            return AWSMarketData(
+        def build_market_data(d: Dict) -> AWSMarketData:
+            backend_configuration = AWSBackendConfiguration(
+                backend_type=backend_declaration.backend_type,
+                bucket=d["bucket"],
+                market_metadata_key=market_metadata_key,
+            )
+            market_data = AWSMarketData(
+                metadata_version="v1",
+                backend_configuration=backend_configuration,
                 name=name,
-                description=args.get("description", None),
+                description=backend_declaration.description,
+                backend_tags=backend_declaration.tags,
+                extensions=backend_declaration.extensions,
                 region=d["region"],
                 bucket=d["bucket"],
                 bucket_url=f"https://s3.{d['region']}.amazonaws.com/{d['bucket']}/",
-                backend_configuration={
-                    "backend_type": backend_type,
-                    "bucket": d["bucket"],
-                    "market_metadata_key": market_metadata_key,
-                },
                 bucket_arn=d["bucket_arn"],
-                tags=args.get("tags", None),
-                extensions=extensions,
             )
 
-        market_data = Output.all(
-            bucket=bucket.bucket, region=bucket.region, bucket_arn=bucket.arn
-        ).apply(build_json_metadata)
+            return market_data
 
-        content = market_data.apply(lambda md: json.dumps(md.__dict__))
-        etag = content.apply(lambda s: hashlib.md5(s.encode()).hexdigest())
+        market_data: Output[MarketData] = Output.all(
+            bucket=bucket.bucket, region=bucket.region, bucket_arn=bucket.arn
+        ).apply(build_market_data)
+
+        # serialize to json using pyserde and calculate Etag
+        market_data_serialized = market_data.apply(lambda m: to_yaml(m))
+        etag = market_data_serialized.apply(
+            lambda s: hashlib.md5(s.encode()).hexdigest()
+        )
 
         # declare the metadata file on object storage as a json file
         pulumi_s3.BucketObjectv2(
             f"{name}-metadata-json",
             bucket=bucket.bucket,
             key=market_metadata_key,
-            content=content,
+            content=market_data_serialized,
             content_type="text/json",
             opts=ResourceOptions(parent=bucket),
             etag=etag,
-            tags=args.get("tags", None),
+            tags=backend_declaration.tags,
         )
 
         # return exactly what's on object storage as an Output
@@ -194,14 +195,13 @@ class AWSMarketBackend(MarketBackend):
         Returns:
             None
         """
-        bucket = self.backend_configuration["bucket"]
         producer_key = self.get_producer_metadata_key(name)
 
         def build_producer_data(d):
             return {
                 "name": name,
                 "description": args.get("description", None),
-                "bucket": bucket,
+                "bucket": self.backend_configuration.bucket,
                 **d,
             }
 
@@ -214,10 +214,10 @@ class AWSMarketBackend(MarketBackend):
 
         pulumi_s3.BucketObjectv2(
             f"{name}-metadata-json",
-            bucket=bucket,
+            bucket=self.backend_configuration.bucket,
             key=producer_key,
             content=content,
-            content_type="text/json",
+            content_type="text/yaml",
             opts=opts,
             tags=self.backend_tags,  # add market's tags
             etag=etag,
@@ -226,7 +226,7 @@ class AWSMarketBackend(MarketBackend):
 
     def get_producer(self, name: str):
         producer_key = self.get_producer_metadata_key(name)
-        return _read_s3_json(self.backend_configuration["bucket"], producer_key)
+        return _read_s3_json(self.backend_configuration.bucket, producer_key)
 
     def declare_dataset(
         self,
@@ -234,7 +234,7 @@ class AWSMarketBackend(MarketBackend):
         args,
         opts: Optional[ResourceOptions] = None,
     ) -> Output:
-        bucket = self.backend_configuration["bucket"]
+        bucket = self.backend_configuration.bucket
         dataset_key = self.get_producer_metadata_key(name)
 
         def build_dataset_data(d):
@@ -259,7 +259,7 @@ class AWSMarketBackend(MarketBackend):
         dataset_key = self.get_dataset_metadata_key(
             producer_name=producer_name, dataset_name=dataset_name
         )
-        return _read_s3_json(self.backend_configuration["bucket"], dataset_key)
+        return _read_s3_json(self.backend_configuration.bucket, dataset_key)
 
 
 def _read_s3_json(bucket: str, key: str) -> Dict[str, Any]:
