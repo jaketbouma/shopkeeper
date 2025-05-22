@@ -105,7 +105,7 @@ class Producer(ComponentResource):
         Backend = backend_factory.get(
             args["backend_configuration"]["backend_type"]  # type:ignore
         )
-        backend = Backend(**args.get("backend_configuration"))  # type: ignore
+        backend = Backend(backend_configuration=args.get("backend_configuration"))
 
         # declare the producer
         self.producer_data = backend.declare_producer(
@@ -145,8 +145,7 @@ class Dataset(ComponentResource):
         super().__init__("pulumi-shopkeeper:index:Dataset", name, args, opts)
 
         backend = backend_factory.get(backend_type=args.get("backend_type"))(
-            tags=args.get("tags"),
-            **args.get("backend_configuration"),  # type:ignore
+            backend_configuration=args.get("backend_configuration"),
         )
         d = backend.declare_dataset(
             name=name,
