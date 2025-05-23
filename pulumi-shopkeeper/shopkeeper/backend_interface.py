@@ -34,8 +34,12 @@ class MarketData[T: MarketBackendConfiguration]:
 
 
 class MarketBackend[
+    # Type variables that accept all subclasses
+    # Pre 3.12 syntax would be something like:
+    #   BaseClassType = TypeVar("BaseClassType", bound=BaseClass))
     MarketBackendConfigurationType: MarketBackendConfiguration,
     MarketBackendDeclarationType: MarketBackendDeclaration,
+    MarketDataType: MarketData,
 ](ABC):
     """
     A market backend stores and serves the metadata that defines data platform
@@ -47,15 +51,15 @@ class MarketBackend[
 
     metadata_version: str = "v1"
     _market_data: MarketData[MarketBackendConfigurationType]
-    BackendDeclaration: type[MarketBackendDeclaration]
-    BackendConfiguration: type[MarketBackendConfiguration]
-    MarketData: type[MarketData]
+    BackendDeclaration: type[MarketBackendDeclarationType]
+    BackendConfiguration: type[MarketBackendConfigurationType]
+    MarketData: type[MarketDataType]  # type[MarketData]
 
     @abstractmethod
     def __init__(
         self,
         backend_configuration: MarketBackendConfigurationType,
-        market_data: Optional[MarketData[MarketBackendConfigurationType]] = None,
+        market_data: Optional[MarketDataType] = None,
     ):
         if market_data is None:
             raise NotImplementedError(
@@ -100,7 +104,7 @@ class MarketBackend[
         cls,
         name: str,
         backend_declaration: MarketBackendDeclarationType,
-    ) -> Output[MarketData]:
+    ) -> Output[MarketDataType]:
         pass
 
     @abstractmethod

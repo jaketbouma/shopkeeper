@@ -1,5 +1,4 @@
 import logging
-import os
 
 import pulumi
 import pytest
@@ -9,12 +8,10 @@ from shopkeeper import aws_market
 from shopkeeper.market import backend_factory
 
 from .test_market import (  # noqa: F401
-    market_backend_declaration,
-    veg_market_backend,
-    veg_market_data,
+    some_market_backend,
+    some_market_backend_declaration,
+    some_market_data,
 )
-
-os.environ["AWS_PROFILE"] = "platform"
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -29,8 +26,8 @@ tags = {
 
 
 @pytest.fixture()
-def pumpkin_producer(veg_market_backend):
-    backend_type = veg_market_backend.backend_configuration["backend_type"]
+def pumpkin_producer(some_market_backend):
+    backend_type = some_market_backend.backend_configuration["backend_type"]
     producer_name = "pumpkintown"
 
     def declare_pumpkin_producer():
@@ -38,7 +35,7 @@ def pumpkin_producer(veg_market_backend):
             name=producer_name,
             args=market.ProducerArgs(
                 description="Delicious pumpkins",
-                backend_configuration=veg_market_backend.backend_configuration,
+                backend_configuration=some_market_backend.backend_configuration,
                 tags=tags,
                 extensions=None,
             ),
@@ -54,7 +51,7 @@ def pumpkin_producer(veg_market_backend):
     up_result = stack.up()
     logger.info(f"pulumi: {up_result.summary.message}")
 
-    new_producer = veg_market_backend.get_producer(producer_name)
+    new_producer = some_market_backend.get_producer(producer_name)
     return new_producer
 
 
@@ -64,8 +61,8 @@ def test_pumpkin_producer_initialization(pumpkin_producer):
 
 
 # test for a producer with a subtly broken backend
-def test_pumpkin_producer_wrong_name(veg_market_backend):
-    valid_backend_configuration = veg_market_backend.backend_configuration
+def test_pumpkin_producer_wrong_name(some_market_backend):
+    valid_backend_configuration = some_market_backend.backend_configuration
     invalid_backend_configuration = valid_backend_configuration
 
     B = backend_factory.get(valid_backend_configuration["backend_type"])
@@ -84,8 +81,8 @@ def test_pumpkin_producer_wrong_name(veg_market_backend):
 @pytest.mark.skip(
     reason="Open Pulumi issue: BucketObjectV2 does overwrite without error"
 )
-def test_conflict_with_pumpkin_producer(veg_market_backend, pumpkin_producer):
-    backend_type = veg_market_backend.backend_configuration["backend_type"]
+def test_conflict_with_pumpkin_producer(some_market_backend, pumpkin_producer):
+    backend_type = some_market_backend.backend_configuration["backend_type"]
     producer_name = pumpkin_producer["name"]
 
     def declare_pumpkin_producer():
@@ -93,7 +90,7 @@ def test_conflict_with_pumpkin_producer(veg_market_backend, pumpkin_producer):
             name=producer_name,
             args=market.ProducerArgs(
                 description="Duplicate delicious pumpkins",
-                backend_configuration=veg_market_backend.backend_configuration,
+                backend_configuration=some_market_backend.backend_configuration,
                 tags=tags,
                 extensions=None,
             ),
@@ -110,7 +107,7 @@ def test_conflict_with_pumpkin_producer(veg_market_backend, pumpkin_producer):
     up_result = stack.up()
     logger.info(f"pulumi: {up_result.summary.message}")
 
-    new_producer = veg_market_backend.get_producer(producer_name)
+    new_producer = some_market_backend.get_producer(producer_name)
     return new_producer
 
 

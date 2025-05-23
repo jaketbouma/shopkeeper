@@ -9,17 +9,16 @@ packages:
     version: 0.0.0
 
 resources:
-  fishmarketDev:
-    type: pulumi-shopkeeper:Market
-    properties:
-      description: Fishmarket (dev)
-      backendDeclaration:
-        backend_type: aws:latest
-        bucket_prefix: fishmarket-dev
-      extensions:
-        fishmarket_properties_v1:
-          fishmonger: John
-          address: 1 Fish Road, Splashtown, 0001
+  #fishmarketDev:
+  #  type: pulumi-shopkeeper:Market
+  #  properties:
+  #    description: Fishmarket (dev)
+  #    backend_type: aws:latest
+  #    bucket_prefix: fishmarket-dev
+  #    extensions:
+  #      fishmarket_properties_v1:
+  #        fishmonger: John
+  #        address: 1 Fish Road, Splashtown, 0001
 
   fishmarketProd:
     type: pulumi-shopkeeper:Market
@@ -28,8 +27,8 @@ resources:
       backendDeclaration:
         backend_type: aws:v1
         bucket_prefix: fishmarket-prod
-      tags:
-        environment: prod
+        tags:
+          environment: prod
  
 outputs:
   fishmarketDevMarketData: ${fishmarketDev.marketData}

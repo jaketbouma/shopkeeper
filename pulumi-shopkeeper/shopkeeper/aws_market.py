@@ -8,7 +8,7 @@ import boto3
 from pulumi import Output, ResourceOptions
 from pulumi_aws import s3 as pulumi_s3
 from serde import serde
-from serde.yaml import to_yaml
+from serde.yaml import from_yaml, to_yaml
 
 from shopkeeper.backend_interface import (
     MarketBackend,
@@ -68,6 +68,9 @@ class AWSMarketBackend(MarketBackend):
 
     backend_configuration: AWSBackendConfiguration
     SUPPORTED_BACKEND_TYPES = ["aws:v1", "aws:latest"]
+    _serializer = from_yaml
+    _deserializer = to_yaml
+
     BackendConfiguration = AWSBackendConfiguration
     BackendDeclaration = AWSBackendDeclaration
     MarketData = AWSMarketData
@@ -76,12 +79,12 @@ class AWSMarketBackend(MarketBackend):
         self,
         backend_configuration: AWSBackendConfiguration,
     ):
-        market_data = AWSMarketData(
-            **_read_s3_json(
-                bucket=backend_configuration.bucket,
-                key=backend_configuration.market_metadata_key,
-            )
+        # assuming yaml
+        raw_market_data = _read_s3_file(
+            bucket=backend_configuration.bucket,
+            key=backend_configuration.market_metadata_key,
         )
+        market_data = from_yaml(AWSMarketData, raw_market_data)
 
         super().__init__(
             backend_configuration=backend_configuration, market_data=market_data
@@ -270,3 +273,13 @@ def _read_s3_json(bucket: str, key: str) -> Dict[str, Any]:
     byte_content = response["Body"].read()
     content = byte_content.decode("utf-8")
     return json.loads(content)
+
+
+def _read_s3_file(bucket: str, key: str) -> str:
+    s3 = boto3.client("s3")
+    key = key.lstrip("/")
+    logger.info(f"fetching {bucket}/{key}")
+    response = s3.get_object(Bucket=bucket, Key=key)
+    byte_content = response["Body"].read()
+    content = byte_content.decode("utf-8")
+    return content
