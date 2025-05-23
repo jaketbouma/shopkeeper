@@ -18,6 +18,51 @@ Goals:
 * An interface with an outer structure that is always the same, that Pulumi can bind to. The Pulumi ComponentResources use the interface.
 * The interface is strongly typed so that we have slapping-good tab completion for developers, builtin documentation, and early errors.
 
+Hrmmm... Pulumi doesn't really have a way to infer the class... The required parameters of the ABC are fixed. So we either:
+1. Wrap stuff up into a Dict or something
+1. Find a way to generate a whoole bunch of Components under `__main__` / `component_provider_host`.
+```
+# market.py
+class Market[T: MarketBackendDeclaration](ComponentResource):
+    """
+    Pulumi component resource declaring a market.
+    """
+
+    market_data: Output[Any]
+
+    def __init__(
+        self,
+        name: str,
+        args: T,
+        opts: Optional[ResourceOptions] = None,
+    ) -> None:
+```
+and 
+```
+# __main__.py
+AWSMarket = Market[AWSBackendDeclaration]
+AWSMarket.__name__ = "AWSMarket"
+
+if __name__ == "__main__":
+    component_provider_host(
+        name="pulumi-shopkeeper",
+        components=[AWSMarket],
+        namespace="AWS",
+    )
+
+```
+produces
+```
+    Exception: ComponentResource 'AWSMarket' requires an argument named 'args' with a type annotation in its __init__ method
+    Error: error resolving type of resource fishmarketProd: internal error loading package "pulumi-shopkeeper": Error loading schema from plugin: could not read plugin [/workspaces/shopkeeper/pulumi-shopkeeper/pulumi-resource-pulumi-shopkeeper] stdout: EOF
+      on Pulumi.yaml line 24:
+```
+because `pulumi/provider/experimental/analyzer.py` is doing a `inspect.get_annotations(o)` on `Market[AWSMarketDeclaration]` which is a `<class 'typing._GenericAlias'>`. This doesn't work, and I don't see a way to get the annotations, I feel like I'm doing something stupid here ;o
+
+Should I just define the Pulumi Component resource in the implementation `aws_market.py`? Why not?
+
+
+### Thinking about ABCs...
 ```python
 # Interface as an Abstract Base Class
 

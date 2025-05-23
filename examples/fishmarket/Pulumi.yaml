@@ -24,11 +24,10 @@ resources:
     type: pulumi-shopkeeper:Market
     properties:
       description: Fishmarket (Prod)
-      backendDeclaration:
-        backend_type: aws:v1
-        bucket_prefix: fishmarket-prod
-        tags:
-          environment: prod
+      backendType: aws:v1
+      bucketPrefix: fishmarket-prod
+      tags:
+        environment: prod
  
 outputs:
   fishmarketDevMarketData: ${fishmarketDev.marketData}

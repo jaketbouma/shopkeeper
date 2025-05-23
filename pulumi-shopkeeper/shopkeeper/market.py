@@ -4,10 +4,19 @@ from typing import Any, Dict, Optional, TypedDict
 from pulumi import ComponentResource, Input, Output, ResourceOptions
 
 from shopkeeper import backend_factory
-from shopkeeper.backend_interface import MarketBackendDeclaration
+from shopkeeper.backend_interface import (  # noqa F401
+    MarketBackendDeclaration,
+)
 
 
-class Market(ComponentResource):
+class MarketArgs(TypedDict):
+    backend_declaration: str
+    description: str
+    tags: Dict[str, str] | None
+    extensions: Dict[str, Dict[str, str]] | None
+
+
+class Market[T: MarketBackendDeclaration](ComponentResource):
     """
     Pulumi component resource declaring a market.
     """
@@ -17,7 +26,7 @@ class Market(ComponentResource):
     def __init__(
         self,
         name: str,
-        args: MarketBackendDeclaration,
+        args: T,
         opts: Optional[ResourceOptions] = None,
     ) -> None:
         super().__init__("pulumi-shopkeeper:index:Market", name, props={}, opts=opts)
