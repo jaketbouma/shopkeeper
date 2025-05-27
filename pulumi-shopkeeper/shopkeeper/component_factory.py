@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any, Optional, Type
 
 from pulumi import Output, ResourceOptions
 from pulumi.provider.experimental import component_provider_host
@@ -14,7 +14,7 @@ def ComponentClassFactory(
     component_name: str,
     Args,
     Return,
-) -> ComponentResource:
+) -> Type[ComponentResource]:
     class GeneratedComponent(ComponentResource):
         market_data: Output[Any]
 
