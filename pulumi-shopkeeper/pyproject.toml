@@ -19,6 +19,7 @@ debugpy = "^1.8.14"
 ruff = "^0.11.9"
 pycodestyle = "^2.13.0"
 autopep8 = "^2.3.2"
+pulumi = {path = "/workspaces/pulumi/sdk/python", develop = true }
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

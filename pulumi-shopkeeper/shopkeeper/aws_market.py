@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 @dataclass(kw_only=True)
 class AWSBackendDeclaration(MarketBackendDeclaration):
     bucket_prefix: Optional[str] = None
+    # bucket_prefix: str
 
 
 @serde

@@ -5,7 +5,6 @@ from pulumi.provider.experimental import component_provider_host
 
 from shopkeeper.aws_market import (
     AWSBackendDeclaration,
-    AWSMarketData,
 )
 from shopkeeper.market import ComponentResource
 
@@ -13,7 +12,6 @@ from shopkeeper.market import ComponentResource
 def ComponentClassFactory(
     component_name: str,
     Args,
-    Return,
 ) -> Type[ComponentResource]:
     class GeneratedComponent(ComponentResource):
         market_data: Output[Any]
@@ -23,28 +21,53 @@ def ComponentClassFactory(
             name: str,
             args: Args,  # type: ignore
             opts: Optional[ResourceOptions] = None,
-        ) -> Return:  # type: ignore
+        ):
             super().__init__(
                 f"pulumi-shopkeeper:index:{component_name}", name, props={}, opts=opts
             )
-            self.register_outputs({})
+            self.market_data = {"berry": "blue"}
+            self.register_outputs({"marketData": self.market_data})
 
     GeneratedComponent.__name__ = component_name
     return GeneratedComponent
 
 
-components = [
-    ComponentClassFactory(
-        component_name="AWSMarket", Args=AWSBackendDeclaration, Return=AWSMarketData
-    ),
-    ComponentClassFactory(
-        component_name="AnotherAWSMarket",
-        Args=AWSBackendDeclaration,
-        Return=AWSMarketData,
-    ),
-]
+def ComponentClassFactory2(
+    component_name: str,
+    Args,
+) -> Type[ComponentResource]:
+    marketData: dict[str, str] = {"banana": "yellow"}
+
+    def _constructor(
+        self,
+        name: str,
+        args: Args,  # type: ignore
+        opts: Optional[ResourceOptions] = None,
+    ):
+        ComponentResource.__init__(
+            self, f"pulumi-shopkeeper:index:{component_name}", name, props={}, opts=opts
+        )
+
+        marketData = {"mango": "orangish"}
+        # do something
+        self.register_outputs({"marketData": marketData})
+
+    T = type(
+        component_name,
+        (ComponentResource,),
+        {"__init__": _constructor, "marketData": marketData},
+    )
+    return T
+
 
 if __name__ == "__main__":
+    components = [
+        ComponentClassFactory2(component_name="AWSMarket", Args=AWSBackendDeclaration),
+        ComponentClassFactory2(
+            component_name="AWSMarket2",
+            Args=AWSBackendDeclaration,
+        ),
+    ]
     component_provider_host(
         name="pulumi-shopkeeper",
         components=components,

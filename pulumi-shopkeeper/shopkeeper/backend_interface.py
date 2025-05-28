@@ -6,14 +6,13 @@ from typing import (
     Optional,  # add this import
 )
 
-from pulumi import Output, ResourceOptions
+from pulumi import Output
 
 
 @dataclass
 class MarketBackendDeclaration:
     backend_type: str
     description: str
-    opts: Optional[ResourceOptions] = None
     tags: Optional[Dict[str, str]] = None
     extensions: Optional[Dict[str, Dict[str, str]]] = None
 

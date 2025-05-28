@@ -21,7 +21,7 @@ resources:
   #        address: 1 Fish Road, Splashtown, 0001
 
   fishmarketProd:
-    type: pulumi-shopkeeper:Market
+    type: pulumi-shopkeeper:AWSMarketX
     properties:
       description: Fishmarket (Prod)
       backendType: aws:v1
