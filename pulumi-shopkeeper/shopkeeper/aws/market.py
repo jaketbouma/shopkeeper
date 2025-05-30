@@ -67,8 +67,7 @@ class AWSMarketBackend(MarketBackend):
     The market is deployed separately.
     """
 
-    backend_configuration: AWSBackendConfiguration
-    SUPPORTED_BACKEND_TYPES = ["aws:v1", "aws:latest"]
+    backend_configuration: Optional[AWSBackendConfiguration] = None
     _serializer = from_yaml
     _deserializer = to_yaml
 
@@ -94,7 +93,7 @@ class AWSMarketBackend(MarketBackend):
     @classmethod
     def declare_market(
         cls, name, backend_declaration: AWSBackendDeclaration
-    ) -> Output[AWSMarketData]:
+    ) -> Output[Any]:
         """
         Declares a market, creating a bucket and metadata file on S3
 
@@ -115,18 +114,11 @@ class AWSMarketBackend(MarketBackend):
         if backend_declaration.bucket_prefix is None:
             backend_declaration.bucket_prefix = name
 
-        # this code supports a known list of backend types
-        if backend_declaration.backend_type not in cls.SUPPORTED_BACKEND_TYPES:
-            raise Exception(
-                f"Backend type {backend_declaration.backend_type} not supported by {cls.__name__}"
-            )
-
         # create bucket and set permissions
         bucket = pulumi_s3.BucketV2(
             f"{name}-bucket",
             bucket_prefix=backend_declaration.bucket_prefix,
             force_destroy=True,
-            opts=backend_declaration.opts,
             tags=backend_declaration.tags,
         )
         pulumi_s3.BucketOwnershipControls(

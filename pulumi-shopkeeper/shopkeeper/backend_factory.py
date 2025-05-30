@@ -1,62 +1,80 @@
-import os
+from dataclasses import dataclass
 from typing import Type
 
-from jinja2 import Environment, FileSystemLoader
 from pulumi import ComponentResource
 
-from shopkeeper.aws_market import AWSBackendDeclaration, AWSMarketBackend  # noqa F401
-from shopkeeper.backend_interface import MarketBackend  # noqa F401
-from shopkeeper.generated import components
+from shopkeeper.aws.market import (
+    AWSBackendConfiguration,
+    AWSBackendDeclaration,
+    AWSMarketBackend,
+)
+from shopkeeper.backend_interface import (
+    MarketBackend,
+    MarketBackendConfiguration,
+    MarketBackendDeclaration,
+)
 
-MARKET_BACKENDS = {
-    "AWSMarketBackendV1": {
-        "component_type": AWSMarketBackend,
-        "args_type": AWSBackendDeclaration,
-    },
-    "AWSMarketBackendLatest": {
-        "component_type": AWSMarketBackend,
-        "args_type": AWSBackendDeclaration,
-    },
-}
+# REGISTER A BACKEND HERE UNDER _market_backends
+# manually, so that we can serve different versions easily in the future.
+# Can look to streamline this registration later if we want to constrain
+# versioning.
+# 👇 👇 👇
 
 
-def get(backend_type) -> Type[MarketBackend]:
-    if backend_type not in MARKET_BACKENDS:
+@dataclass
+class BackendSpec:
+    name: str  # must be a valid Python identifier
+    market_backend: Type[MarketBackend]
+    market_backend_declaration: Type[MarketBackendDeclaration]
+    market_backend_configuration: Type[MarketBackendConfiguration]
+
+    def __post_init__(self):
+        if not self.name.isidentifier():
+            raise ValueError(f"{self.name!r} is not a valid Python identifier")
+
+
+_market_backends: list[BackendSpec] = [
+    BackendSpec(
+        name="AwsV1",
+        market_backend=AWSMarketBackend,
+        market_backend_declaration=AWSBackendDeclaration,
+        market_backend_configuration=AWSBackendConfiguration,
+    ),
+    BackendSpec(
+        name="AwsLatest",
+        market_backend=AWSMarketBackend,
+        market_backend_declaration=AWSBackendDeclaration,
+        market_backend_configuration=AWSBackendConfiguration,
+    ),
+]
+# 👆 👆 👆
+# REGISTER A BACKEND HERE UNDER _market_backends
+
+_market_backend_dict = {b.name: b for b in _market_backends}
+
+
+def get_backends() -> list[BackendSpec]:
+    return _market_backends
+
+
+def list_backends() -> list[BackendSpec]:
+    return _market_backends
+
+
+def get_market_backend(backend_name) -> Type[MarketBackend]:
+    if backend_name not in _market_backend_dict:
         raise KeyError("Unknown Backend")
-    return MARKET_BACKENDS[backend_type]["component_type"]
+    return _market_backend_dict[backend_name].market_backend
 
 
-def get_components() -> list[ComponentResource]:
-    return components.components
+def get_components() -> list[Type[ComponentResource]]:
+    from shopkeeper.generated.components import components
+
+    return components
 
 
-def __generate_components():
-    """
-    Renders the component.py.jinja template with example data and writes to ./generated/components.py
-    """
-    env = Environment(
-        loader=FileSystemLoader(os.path.dirname(__file__)),
-        trim_blocks=True,
-        lstrip_blocks=True,
-    )
-    template = env.get_template("components.py.jinja")
-    example_data = {
-        "components": [
-            {
-                "component_module": v["component_type"].__module__,
-                "args_type_name": v["args_type"].__name__,
-                "component_name": k,
-            }
-            for k, v in MARKET_BACKENDS.items()
-        ]
+def get_market_backend_component(backend_name):
+    _market_backend_components_dict: dict[str, Type] = {
+        c.__name__: c for c in get_components()
     }
-    rendered = template.render(**example_data)
-    project_root = os.path.dirname(os.path.dirname(__file__))
-    output_dir = os.path.join(project_root, "shopkeeper/generated")
-    os.makedirs(output_dir, exist_ok=True)
-    with open(os.path.join(output_dir, "components.py"), "w") as f:
-        f.write(rendered)
-
-
-if __name__ == "__main__":
-    __generate_components()
+    return _market_backend_components_dict[backend_name]

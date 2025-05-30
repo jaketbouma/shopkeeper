@@ -4,7 +4,7 @@ import pulumi
 import pytest
 
 import shopkeeper.market as market
-from shopkeeper import aws_market
+from shopkeeper.aws import market
 from shopkeeper.market import backend_factory
 
 from .test_market import (  # noqa: F401
@@ -16,7 +16,7 @@ from .test_market import (  # noqa: F401
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-logger.info(f"imported {aws_market}")
+logger.info(f"imported {market}")
 
 tags = {
     "environment": "test",

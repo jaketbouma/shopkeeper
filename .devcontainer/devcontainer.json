@@ -38,7 +38,8 @@
 				"charliermarsh.ruff",
 				"ms-python.python",
 				"pulumi.pulumi-vscode-tools",
-				"samuelcolvin.jinjahtml"
+				"samuelcolvin.jinjahtml",
+				"tamasfe.even-better-toml"
 			]
 		}
 	},

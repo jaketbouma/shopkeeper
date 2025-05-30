@@ -24,7 +24,7 @@ def ComponentClassFactory(
             self, f"pulumi-shopkeeper:index:{component_name}", name, props={}, opts=opts
         )
 
-        marketData = {"mango": "orangish"}
+        self.marketData = {"mango": "orangish"}
         # do something
         self.register_outputs({"marketData": marketData})
 

@@ -6,9 +6,8 @@ import pytest
 from serde import from_dict
 from serde.yaml import from_yaml, to_yaml
 
-import shopkeeper.market as market
-from shopkeeper import aws_market, backend_factory
-from shopkeeper.aws_market import (  # noqa F401
+from shopkeeper import backend_factory
+from shopkeeper.aws.market import (  # noqa F401
     AWSBackendConfiguration,
     AWSBackendDeclaration,
 )
@@ -23,7 +22,6 @@ os.environ["AWS_PROFILE"] = "platform"
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-logger.info(f"imported {aws_market}")
 
 tags = {
     "environment": "test",
@@ -36,14 +34,14 @@ tags = {
 @pytest.fixture(
     params=[
         AWSBackendDeclaration(
-            bucket_prefix="aws-latest-veg",
-            backend_type="aws:latest",
+            bucket_prefix="aws-v1-veg",
+            backend_type="AwsV1",
             description="Oh yeah veggies",
             tags=tags,
         ),
         AWSBackendDeclaration(
-            bucket_prefix="aws-v1-veg",
-            backend_type="aws:v1",
+            bucket_prefix="aws-latest-veg",
+            backend_type="AwsLatest",
             description="Oh yeah veggies",
             tags=tags,
         ),
@@ -59,7 +57,8 @@ def some_market_data(
     some_market_backend_declaration: MarketBackendDeclaration, pytestconfig
 ) -> MarketData:
     backend_type = some_market_backend_declaration.backend_type
-    Backend = backend_factory.get(backend_type)
+    Backend = backend_factory.get_market_backend(backend_type)
+    BackendComponent = backend_factory.get_market_backend_component(backend_type)
     cache_key = f"veg_market_data/{backend_type}"
 
     # use a cached backend
@@ -75,10 +74,16 @@ def some_market_data(
         """
         A simple inline pulumi program to declare a market
         """
-        m = market.Market(
-            name="veg-market",
+        from shopkeeper.market import Market
+
+        m = Market(
+            name=f"{BackendComponent.__name__}:veg-market",
             args=some_market_backend_declaration,
         )
+        # m = BackendComponent(
+        #    name=f"{BackendComponent.__name__}:veg-market",
+        #    args=some_market_backend_declaration,
+        # )
         pulumi.export("market_data", m.market_data)
 
     stack = pulumi.automation.create_or_select_stack(

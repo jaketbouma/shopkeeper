@@ -29,7 +29,9 @@ class Market[T: MarketBackendDeclaration](ComponentResource):
         args: T,
         opts: Optional[ResourceOptions] = None,
     ) -> None:
-        super().__init__("pulumi-shopkeeper:index:Market", name, props={}, opts=opts)
+        super().__init__(
+            f"pulumi-shopkeeper:index:{args.backend_type}", name, props={}, opts=opts
+        )
 
         # check if args["backend_declaration"] is awaitable
         if inspect.isawaitable(args):
@@ -37,22 +39,13 @@ class Market[T: MarketBackendDeclaration](ComponentResource):
                 "Input dependencies not yet implemented. Throw something back at a developer."
             )
 
-        # ensure that parent is passed through
-        opts = ResourceOptions.merge(ResourceOptions(parent=self), opts)
-
-        # declare the market backend
-        Backend = backend_factory.get(args.backend_type)
-        backend_declaration = args
-
+        Backend = backend_factory.get_market_backend(args.backend_type)
         self.market_data = Backend.declare_market(
             name=name,
-            backend_declaration=backend_declaration,
+            backend_declaration=args,
         )
 
-        # wrap up, exposing the result of the declaration
-        self.register_outputs(
-            {}
-        )  # "marketData": self.market_data})  # self.market_data})
+        self.register_outputs({"marketData": self.market_data})
 
 
 class ProducerArgs(TypedDict):

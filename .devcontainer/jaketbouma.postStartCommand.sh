@@ -19,3 +19,7 @@ chezmoi init --apply $GITHUB_USERNAME
 
 # Initialize poetry
 cd /workspaces/shopkeeper/pulumi-shopkeeper && poetry install
+
+# Poe completions for zsh
+mkdir -p ~/.oh-my-zsh/completions/
+cd /workspaces/shopkeeper/pulumi-shopkeeper && poetry run poe _zsh_completion > ~/.oh-my-zsh/completions/_poe
