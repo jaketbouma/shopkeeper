@@ -1,43 +1,41 @@
 import pulumi
 import pulumi.automation
 
+from shopkeeper.local.market import (
+    LocalMarketV1,
+    LocalMarketV1Args,
+    LocalMarketV1Configuration,
+)
+from shopkeeper.local.producer import LocalProducerV1, LocalProducerV1Args
+
 
 def declare_local_market():
-    from shopkeeper.local.market import LocalMarket, LocalMarketArgs
-
-    m = LocalMarket(
+    m = LocalMarketV1(
         name="test-local-market",
-        args=LocalMarketArgs(
+        args=LocalMarketV1Args(
             name="SomeMarket",
             description="Some description",
-            market_type="LocalMarket",
             path="/tmp/test",
         ),
         opts=None,
     )
-    pulumi.export("marketData", m.marketData)
+    pulumi.export("marketData", m.market_data)
 
 
 def declare_local_producer():
-    from shopkeeper.local.market import (
-        LocalMarketConfiguration,
-        LocalProducer,
-        LocalProducerArgs,
-    )
-
-    p = LocalProducer(
+    p = LocalProducerV1(
         name="test-local-producer",
-        args=LocalProducerArgs(
+        args=LocalProducerV1Args(
             name="SomeProducer",
             description="Some description",
-            market=LocalMarketConfiguration(
-                market_type="LocalMarket", metadata_file="/tmp/test"
+            market=LocalMarketV1Configuration(
+                market_type="LocalMarketV1", metadata_file="notyetimplementedtest"
             ),
             color="Red",
         ),
         opts=None,
     )
-    pulumi.export("producerData", p.producerData)
+    pulumi.export("producerData", p.producer_data)
 
 
 def test_local_market():

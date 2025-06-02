@@ -34,7 +34,6 @@ filterwarnings = [
 ]
 testpaths = [
     "tests",
-    "shopkeeper"
 ]
 
 [tool.ruff]
@@ -52,6 +51,7 @@ poethepoet = { version = "~0.34.0", extras = ["poetry_plugin"]}
 [tool.poe.tasks]
 nothing = "echo '🫙🫙🫙🫙🫙'"
 test = ["clean", "generate-components", "pytest"]
+destroy-yaml-stacks.script = "scripts/destroy_yaml_stacks.py"
 
 [tool.poe.tasks.generate-components]
 help = "Generate Pulumi Components Code from the backend factory"

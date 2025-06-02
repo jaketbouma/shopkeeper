@@ -3,9 +3,8 @@ import logging
 import pulumi
 import pytest
 
-import shopkeeper.market as market
-from shopkeeper.aws import market
-from shopkeeper.market import backend_factory
+import shopkeeper.base_market as base_market
+from shopkeeper.base_market import backend_factory
 
 from .test_market import (  # noqa: F401
     some_market_backend,
@@ -16,7 +15,7 @@ from .test_market import (  # noqa: F401
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-logger.info(f"imported {market}")
+logger.info(f"imported {base_market}")
 
 tags = {
     "environment": "test",
@@ -31,9 +30,9 @@ def pumpkin_producer(some_market_backend):
     producer_name = "pumpkintown"
 
     def declare_pumpkin_producer():
-        market.Producer(
+        base_market.Producer(
             name=producer_name,
-            args=market.ProducerArgs(
+            args=base_market.ProducerArgs(
                 description="Delicious pumpkins",
                 backend_configuration=some_market_backend.backend_configuration,
                 tags=tags,
@@ -86,9 +85,9 @@ def test_conflict_with_pumpkin_producer(some_market_backend, pumpkin_producer):
     producer_name = pumpkin_producer["name"]
 
     def declare_pumpkin_producer():
-        market.Producer(
+        base_market.Producer(
             name=producer_name,
-            args=market.ProducerArgs(
+            args=base_market.ProducerArgs(
                 description="Duplicate delicious pumpkins",
                 backend_configuration=some_market_backend.backend_configuration,
                 tags=tags,

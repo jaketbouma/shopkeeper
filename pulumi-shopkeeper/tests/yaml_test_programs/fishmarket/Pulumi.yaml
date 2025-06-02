@@ -4,13 +4,8 @@ name: fishmarket
 description: A place for fisherfolk to sell their catch.
 packages:
   pulumi-shopkeeper:
-    source: ../../pulumi-shopkeeper
+    source: ../../../../pulumi-shopkeeper
     version: 0.0.0
-  local:
-    source: terraform-provider
-    version: 0.11.0
-    parameters:
-      - hashicorp/local
 resources:
   #fishmarketDev:
   #  type: pulumi-shopkeeper:Market
@@ -23,10 +18,10 @@ resources:
   #        fishmonger: John
   #        address: 1 Fish Road, Splashtown, 0001
   fishmarketProd:
-    type: pulumi-shopkeeper:LocalMarket
+    type: pulumi-shopkeeper:LocalMarketV1
     properties:
+      name: FishMarketProd
       description: Fishmarket (Prod)
-      market_type: LocalMarket
-      path: fishmarket-prod
+      path: /tmp/fishmarket-prod
 outputs:
   fishmarketProdMarketData: ${fishmarketProd.marketData}
