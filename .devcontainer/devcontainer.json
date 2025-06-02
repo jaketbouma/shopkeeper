@@ -37,7 +37,9 @@
 				"ms-python.debugpy",
 				"charliermarsh.ruff",
 				"ms-python.python",
-				"pulumi.pulumi-vscode-tools"
+				"pulumi.pulumi-vscode-tools",
+				"samuelcolvin.jinjahtml",
+				"tamasfe.even-better-toml"
 			]
 		}
 	},

@@ -4,57 +4,47 @@ from typing import Any, Dict, Optional, TypedDict
 from pulumi import ComponentResource, Input, Output, ResourceOptions
 
 from shopkeeper import backend_factory
+from shopkeeper.backend_interface import (  # noqa F401
+    MarketBackendDeclaration,
+)
 
 
 class MarketArgs(TypedDict):
-    """
-    Arguments required to declare a new market.
-
-    Attributes:
-        description (Input[str]): Description of the market.
-        backend_declaration (Optional[Input[Dict[str, Any]]]): An optional dictionary containing
-            additional configuration or declaration details for the backend.
-        tags (Optional[Input[Dict[str, str]]]): A dictionary of key-value pairs used to tag the market
-            with metadata.
-        extensions (Optional[Input[Dict[str, Dict[str, str]]]]): Optional dictionary for market extensions.
-    """
-
-    description: Input[str]
-    backend_declaration: Optional[
-        Input[Dict[str, Any]]
-    ]  # complex types are not yet supported
-    tags: Optional[Input[Dict[str, str]]]
-    extensions: Optional[Input[Dict[str, Dict[str, str]]]]
+    backend_declaration: str
+    description: str
+    tags: Dict[str, str] | None
+    extensions: Dict[str, Dict[str, str]] | None
 
 
-class Market(ComponentResource):
+class Market[T: MarketBackendDeclaration](ComponentResource):
     """
     Pulumi component resource declaring a market.
     """
 
-    market_data: Output[Dict[str, Any]]
+    market_data: Output[Any]
 
     def __init__(
         self,
         name: str,
-        args: MarketArgs,
+        args: T,
         opts: Optional[ResourceOptions] = None,
     ) -> None:
-        super().__init__("pulumi-shopkeeper:index:Market", name, props={}, opts=opts)
+        super().__init__(
+            f"pulumi-shopkeeper:index:{args.backend_type}", name, props={}, opts=opts
+        )
 
         # check if args["backend_declaration"] is awaitable
-        if inspect.isawaitable(args["backend_declaration"]):
+        if inspect.isawaitable(args):
             raise NotImplementedError(
                 "Input dependencies not yet implemented. Throw something back at a developer."
             )
 
-        Backend = backend_factory.get(
-            args["backend_declaration"]["backend_type"]  # type:ignore
-        )
-        self.market_data = Backend.declare(
+        Backend = backend_factory.get_market_backend(args.backend_type)
+        self.market_data = Backend.declare_market(
             name=name,
-            **args,
+            backend_declaration=args,
         )
+
         self.register_outputs({"marketData": self.market_data})
 
 
@@ -65,13 +55,16 @@ class ProducerArgs(TypedDict):
 
     description: Input[str]
     backend_configuration: Input[Dict[str, Any]]
-    tags: Input[Dict[str, str]]
+    tags: Optional[Input[Dict[str, str]]]
+    extensions: Optional[Input[Dict[str, Dict[str, str]]]]
 
 
 class Producer(ComponentResource):
     """
     Pulumi component resource declaring a producer.
     """
+
+    market_data: Output[Dict[str, Any]]
 
     def __init__(
         self,
@@ -88,12 +81,24 @@ class Producer(ComponentResource):
         if "backend_type" not in args["backend_configuration"]:
             raise KeyError("backend_type is required in backend_configuration")
 
-        # declare the backend
-        backend = backend_factory.get(
-            args["backend_configuration"]["backend_type"]  # type:ignore
-        )(**args.get("backend_configuration"))  # type: ignore
+        # ensure that parent is passed through
+        opts = ResourceOptions.merge(ResourceOptions(parent=self), opts)
 
-        backend.declare_producer(name=name, opts=ResourceOptions(parent=self), **args)
+        # initialize the backend
+        Backend = backend_factory.get(
+            args["backend_configuration"]["backend_type"]  # type:ignore
+        )
+        backend = Backend(backend_configuration=args.get("backend_configuration"))
+
+        # declare the producer
+        self.producer_data = backend.declare_producer(
+            name=name,
+            args=args,
+            opts=opts,
+        )
+
+        # wrap up
+        self.register_outputs({"producerData": self.producer_data})
 
 
 class DatasetArgs(TypedDict):
@@ -123,8 +128,7 @@ class Dataset(ComponentResource):
         super().__init__("pulumi-shopkeeper:index:Dataset", name, args, opts)
 
         backend = backend_factory.get(backend_type=args.get("backend_type"))(
-            tags=args.get("tags"),
-            **args.get("backend_configuration"),  # type:ignore
+            backend_configuration=args.get("backend_configuration"),
         )
         d = backend.declare_dataset(
             name=name,

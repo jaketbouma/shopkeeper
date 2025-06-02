@@ -6,11 +6,12 @@ authors = ["Jake Bouma"]
 license = "MIT"
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.12"
 pulumi = "^3.167.0"
 pulumi-aws = "^6.79.2"
 boto3 = "^1.38.8"
 pulumi-std = "^2.2.0"
+pyserde = "^0.24.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3"
@@ -18,6 +19,8 @@ debugpy = "^1.8.14"
 ruff = "^0.11.9"
 pycodestyle = "^2.13.0"
 autopep8 = "^2.3.2"
+pulumi = {path = "/workspaces/pulumi/sdk/python", develop = true }
+poethepoet = "^0.34.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -30,7 +33,8 @@ filterwarnings = [
     "ignore::DeprecationWarning:aws.*:"
 ]
 testpaths = [
-    "tests"
+    "tests",
+    "shopkeeper"
 ]
 
 [tool.ruff]
@@ -41,3 +45,30 @@ docstring-code-format = true
 
 [tool.ruff.lint.pycodestyle]
 max-doc-length = 88
+
+[tool.poetry.requires-plugins]
+poethepoet = { version = "~0.34.0", extras = ["poetry_plugin"]}
+
+[tool.poe.tasks]
+nothing = "echo '🫙🫙🫙🫙🫙'"
+test = ["clean", "generate-components", "pytest"]
+
+[tool.poe.tasks.generate-components]
+help = "Generate Pulumi Components Code from the backend factory"
+script = "shopkeeper.component_generator:__generate_components()"
+
+[tool.poe.tasks.pytest]
+help = "Run pytest with coverage"
+cmd = "poetry run pytest"
+
+[tool.poe.tasks.clean]
+help = "🧹 Remove pytest cache, ..."
+cmd = """
+rm -rf ./.pytest_cache
+       ./shopkeeper/generated
+       ./**/*.pyc
+       ./**/__pycache__
+"""
+
+[tool.poe.poetry_hooks]
+pre_build  = "nothing"

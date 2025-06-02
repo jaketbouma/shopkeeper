@@ -1,5 +1,9 @@
 from pulumi.provider.experimental import component_provider_host
-from shopkeeper.market import Market, Producer
+
+from shopkeeper.generated.components import components
 
 if __name__ == "__main__":
-    component_provider_host(name="pulumi-shopkeeper", components=[Market, Producer])
+    component_provider_host(
+        name="pulumi-shopkeeper",
+        components=components,
+    )
