@@ -38,8 +38,6 @@ class LocalProducerV1(Producer):
 
         filename = self.market_client.get_producer_metadata_key(self.safe_args.name)
 
-        # pretend to do something...
-
         # prepare output data
         producer_data = LocalProducerV1Data(
             color="red",

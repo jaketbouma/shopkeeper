@@ -21,6 +21,9 @@ pycodestyle = "^2.13.0"
 autopep8 = "^2.3.2"
 pulumi = {path = "/workspaces/pulumi/sdk/python", develop = true }
 poethepoet = "^0.34.0"
+pytest-cov = "^6.1.1"
+coverage = "^7.8.2"
+pytest-xdist = "^3.7.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -50,19 +53,23 @@ poethepoet = { version = "~0.34.0", extras = ["poetry_plugin"]}
 
 [tool.poe.tasks]
 nothing = "echo '🫙🫙🫙🫙🫙'"
-test = ["clean", "generate-components", "pytest"]
-destroy-yaml-stacks.script = "scripts/destroy_yaml_stacks.py"
+clean = ["clean-directories", "clean-test-stacks"]
+test = ["clean", "test"]
 
-[tool.poe.tasks.generate-components]
-help = "Generate Pulumi Components Code from the backend factory"
-script = "shopkeeper.component_generator:__generate_components()"
+[tool.poe.tasks.test-programs]
+help = "⚡ Run all test programs in parallel"
+cmd = "poetry run pytest -n auto tests/test_programs.py"
+
+[tool.poe.tasks.clean-test-stacks]
+help = "🔥 Destroy stacks created in pytests"
+cmd = "python tests/destroy_test_stacks.py"
 
 [tool.poe.tasks.pytest]
-help = "Run pytest with coverage"
+help = "🔎 Run pytest with coverage"
 cmd = "poetry run pytest"
 
-[tool.poe.tasks.clean]
-help = "🧹 Remove pytest cache, ..."
+[tool.poe.tasks.clean-directories]
+help = "🧹 Remove pytest cache, generated files, ..."
 cmd = """
 rm -rf ./.pytest_cache
        ./shopkeeper/generated

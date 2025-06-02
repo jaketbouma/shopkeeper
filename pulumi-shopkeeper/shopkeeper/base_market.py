@@ -17,7 +17,8 @@ MarketConfigurationType = TypeVar(
 class MarketConfiguration:
     market_type: str
     # although subclasses contain this information,
-    # market type is required explicitly here to support the Pulumi Yaml interface, which has no knowledge of the subclasses.
+    # market type is required explicitly here to support
+    # the Pulumi Yaml interface, which has no knowledge of the subclasses.
 
     # ...subclasses can extend...
 
@@ -61,6 +62,21 @@ class MarketData:
 
 
 class Market(ComponentResource):
+    """
+    The Metadata structure;
+
+        market={market-name}/
+        ├── metadata.json
+        ├── [static html ux]
+        ├── producer={producer-name}/
+        │   ├── metadata.json
+        │   └── dataset={dataset-name}/
+        │       └── metadata.json
+        └── consumer={consumer-name}/
+            ├── metadata.json
+            └── [infra declarations, approvals and other documentation]
+    """
+
     market_data: Output[str]
     metadata_version: str = "v1"
     safe_args: Any

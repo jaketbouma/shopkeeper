@@ -1,6 +1,6 @@
 import logging
 from dataclasses import dataclass
-from typing import Any, Generic, Optional, TypeVar
+from typing import Any, Optional
 
 from pulumi import ComponentResource, Output, ResourceOptions
 from serde import from_dict
@@ -10,12 +10,10 @@ from shopkeeper.factory import market_factory
 
 logger = logging.getLogger(__name__)
 
-MarketConfigurationT = TypeVar("MarketConfigurationT", bound=MarketConfiguration)
-
 
 @dataclass
-class ProducerArgs(Generic[MarketConfigurationT]):
-    market: MarketConfigurationT
+class ProducerArgs:
+    market: Any
     name: str
     description: str
 

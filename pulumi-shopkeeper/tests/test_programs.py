@@ -8,18 +8,16 @@ from pulumi import automation as auto
 logger = logging.getLogger("fishmarket-test")
 logging.basicConfig(level=logging.INFO)
 
-yaml_programs = (
-    [
-        {
-            "stack_name": "pytest-fishmarket",
-            "program_folder": "yaml_test_programs/fishmarket",
-        },
-        {
-            "stack_name": "pytest-fishermanFred",
-            "program_folder": "yaml_test_programs/fishermanfred",
-        },
-    ],
-)
+yaml_programs = [
+    {
+        "stack_name": "pytest-fishmarket",
+        "program_folder": "yaml_test_programs/fishmarket",
+    },
+    {
+        "stack_name": "pytest-fishermanFred",
+        "program_folder": "yaml_test_programs/fishermanfred",
+    },
+]
 
 
 @pytest.fixture(
