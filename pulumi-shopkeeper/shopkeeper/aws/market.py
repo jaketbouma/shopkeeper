@@ -161,10 +161,10 @@ class AwsMarketV1Client(MarketClient):
 
 
 def _read_s3_file(region: str, bucket: str, key: str) -> str:
-    s3 = boto3.client("s3")
+    s3 = boto3.client("s3", region_name=region)
     key = key.lstrip("/")
     logger.info(f"fetching {bucket}/{key}")
-    response = s3.get_object(Region=region, Bucket=bucket, Key=key)
+    response = s3.get_object(Bucket=bucket, Key=key)
     byte_content = response["Body"].read()
     content = byte_content.decode("utf-8")
     return content
