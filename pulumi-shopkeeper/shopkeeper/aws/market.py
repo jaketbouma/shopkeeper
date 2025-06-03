@@ -1,17 +1,17 @@
 import hashlib
 import logging
-import os
 from dataclasses import dataclass
 from typing import Optional
 
-import pulumi_s3
 from pulumi import Output, ResourceOptions
+from pulumi_aws import s3 as pulumi_s3
 from serde import serde, to_dict
 from serde.yaml import to_yaml
 
 from shopkeeper.base_market import (
     Market,
     MarketArgs,
+    MarketClient,
     MarketConfiguration,
     MarketData,
 )
@@ -49,9 +49,7 @@ class AwsMarketV1(Market):
     def __init__(self, name, args: AwsMarketV1Args, opts):
         super().__init__(name, args, opts)
 
-        filename = os.path.join(
-            self.safe_args.path, Market.get_market_metadata_key(name=name)
-        )
+        filename = Market.get_market_metadata_key(name=name)
 
         # create bucket and set permissions
         bucket = pulumi_s3.BucketV2(
@@ -86,8 +84,8 @@ class AwsMarketV1(Market):
         ).apply(prepare_market_data)
 
         # serialize to json using pyserde and calculate Etag
-        market_data_serialized = market_data.apply(lambda m: to_yaml(m))
-        etag = market_data_serialized.apply(
+        market_data_serialized: Output[str] = market_data.apply(lambda m: to_yaml(m))
+        etag: Output[str] = market_data_serialized.apply(
             lambda s: hashlib.md5(s.encode()).hexdigest()
         )
 
@@ -102,6 +100,15 @@ class AwsMarketV1(Market):
             etag=etag,
         )
 
-        market_data_as_dict = market_data.apply(lambda m: to_dict(m))
+        market_data_as_dict: Output[dict[str, str]] = market_data.apply(
+            lambda m: to_dict(m)
+        )
+
         self.market_data = market_data_as_dict
         self.register_outputs({"marketData": self.market_data})
+
+
+class AwsMarketV1Client(MarketClient):
+    def __init__(self, market_configuration: MarketConfiguration):
+        super().__init__(self, market_configuration=market_configuration)
+        pass

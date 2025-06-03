@@ -77,7 +77,7 @@ class Market(ComponentResource):
             └── [infra declarations, approvals and other documentation]
     """
 
-    market_data: Output[str]
+    market_data: Output[dict[str, str]]
     metadata_version: str = "v1"
     safe_args: Any
 
@@ -133,7 +133,7 @@ class MarketFactory:
         self._clients[market_type] = client
 
     def get_component(self, market_type: str):
-        return self._clients[market_type]
+        return self._components[market_type]
 
     def get_client(self, market_type: str):
         return self._clients[market_type]
