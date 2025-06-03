@@ -59,6 +59,7 @@ class MarketArgs:
 class MarketData:
     market_name: str
     market_type: str
+    market_configuration: Any
 
 
 class Market(ComponentResource):
@@ -117,26 +118,33 @@ class Market(ComponentResource):
 
 class MarketFactory:
     _clients: dict[str, type[MarketClient]]
-    _components: dict[str, type["Market"]]
+    _components: dict[str, type[Market]]
+    _configurations: dict[str, type[MarketConfiguration]]
 
-    def __init__(
+    def __init__(self):
+        self._clients = {}
+        self._components = {}
+        self._configurations = {}
+
+    def register(
         self,
-        markets: Optional[dict[str, type["Market"]]] = None,
-        clients: Optional[dict[str, type[MarketClient]]] = None,
+        market: Type["Market"],
+        client: Type[MarketClient],
+        configuration: Type[MarketConfiguration],
     ):
-        self._clients = clients or {}
-        self._components = markets or {}
-
-    def register(self, market: Type["Market"], client: Type[MarketClient]):
         market_type = market.__name__
         self._components[market_type] = market
         self._clients[market_type] = client
+        self._configurations[market_type] = configuration
 
     def get_component(self, market_type: str):
         return self._components[market_type]
 
     def get_client(self, market_type: str):
         return self._clients[market_type]
+
+    def get_configuration(self, market_type: str):
+        return self._configurations[market_type]
 
     def configure_client(
         self, market_configuration: MarketConfiguration

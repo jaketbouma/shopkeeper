@@ -30,6 +30,7 @@ class AwsMarketV1Args(MarketArgs):
 @dataclass()
 class AwsMarketV1Configuration(MarketConfiguration):
     bucket: str
+    region: str
     market_metadata_key: str
 
 
@@ -38,9 +39,9 @@ class AwsMarketV1Configuration(MarketConfiguration):
 class AwsMarketV1Data(MarketData):
     region: str
     bucket: str
-    bucket_url: str
     bucket_arn: str
     market_metadata_key: str
+    market_configuration: AwsMarketV1Configuration
 
 
 class AwsMarketV1(Market):
@@ -68,10 +69,17 @@ class AwsMarketV1(Market):
         )
 
         def prepare_market_data(d) -> AwsMarketV1Data:
+            market_type = self.__class__.__name__
             market_data = AwsMarketV1Data(
-                market_type=self.__class__.__name__,
+                market_type=market_type,
                 market_name=name,
                 market_metadata_key=filename,
+                market_configuration=AwsMarketV1Configuration(
+                    market_type=market_type,
+                    bucket=d["bucket"],
+                    region=d["region"],
+                    market_metadata_key=filename,
+                ),
                 **d,
             )
             return market_data
@@ -79,7 +87,6 @@ class AwsMarketV1(Market):
         market_data: Output[AwsMarketV1Data] = Output.all(
             bucket=bucket.bucket,
             region=bucket.region,
-            bucket_url=bucket.url,
             bucket_arn=bucket.arn,
         ).apply(prepare_market_data)
 
@@ -110,5 +117,5 @@ class AwsMarketV1(Market):
 
 class AwsMarketV1Client(MarketClient):
     def __init__(self, market_configuration: MarketConfiguration):
-        super().__init__(self, market_configuration=market_configuration)
+        super().__init__(market_configuration=market_configuration)
         pass

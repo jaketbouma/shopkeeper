@@ -1,10 +1,10 @@
 import logging
 import os
 from dataclasses import dataclass
+from typing import Any
 
 from pulumi import Output
-from serde import serde
-from serde.yaml import to_yaml
+from serde import serde, to_dict
 
 from shopkeeper.base_market import (
     Market,
@@ -41,7 +41,7 @@ class LocalMarketData(MarketData):
 
 
 class LocalMarketV1(Market):
-    market_data: Output[str]
+    market_data: Output[dict[str, Any]]
 
     def __init__(self, name, args: LocalMarketV1Args, opts):
         super().__init__(name, args, opts)
@@ -49,14 +49,18 @@ class LocalMarketV1(Market):
         filename = os.path.join(
             self.safe_args.path, Market.get_market_metadata_key(name=name)
         )
-
+        market_type = self.__class__.__name__
         market_data = LocalMarketData(
             market_name=name,
-            market_type=self.__class__.__name__,
+            market_type=market_type,
             path=self.safe_args.path,
             metadata_file=filename,
+            market_configuration=LocalMarketV1Configuration(
+                market_type=market_type,
+                metadata_file=filename,
+            ),
         )
-        output_market_data = to_yaml(market_data)
+        output_market_data = to_dict(market_data)
 
         # do nothing...
 
