@@ -17,5 +17,7 @@ market_factory.register(
     configuration=LocalMarketV1Configuration,
 )
 market_factory.register(
-    market=AwsMarketV1, client=AwsMarketV1Client, configuration=AwsMarketV1Configuration
+    market=AwsMarketV1,
+    client=AwsMarketV1Client,
+    configuration=AwsMarketV1Configuration,
 )

@@ -21,8 +21,10 @@ class ProducerArgs:
 @dataclass
 class ProducerData:
     market: MarketConfiguration | Any
+    producer_type: str
     name: str
     description: str
+    key: str
 
 
 class Producer(ComponentResource):

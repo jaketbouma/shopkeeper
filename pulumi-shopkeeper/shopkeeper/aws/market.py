@@ -1,12 +1,13 @@
 import hashlib
 import logging
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Type
 
+import boto3
 from pulumi import Output, ResourceOptions
 from pulumi_aws import s3 as pulumi_s3
 from serde import serde, to_dict
-from serde.yaml import to_yaml
+from serde.yaml import from_yaml, to_yaml
 
 from shopkeeper.base_market import (
     Market,
@@ -116,6 +117,54 @@ class AwsMarketV1(Market):
 
 
 class AwsMarketV1Client(MarketClient):
-    def __init__(self, market_configuration: MarketConfiguration):
+    def __init__(self, market_configuration: AwsMarketV1Configuration):
         super().__init__(market_configuration=market_configuration)
-        pass
+
+        yaml_market_data = _read_s3_file(
+            region=market_configuration.region,
+            bucket=market_configuration.bucket,
+            key=market_configuration.market_metadata_key,
+        )
+        self.market_data = from_yaml(AwsMarketV1Data, yaml_market_data)
+
+    def declare_resource_metadata(
+        self,
+        data: Output[AwsMarketV1Data],
+        key: str,
+        name: str,
+        opts: Optional[ResourceOptions] = None,
+    ) -> Output[dict[str, str]]:
+        # serialize to json using pyserde and calculate Etag
+        data_serialized: Output[str] = data.apply(lambda m: to_yaml(m))
+        etag: Output[str] = data_serialized.apply(
+            lambda s: hashlib.md5(s.encode()).hexdigest()
+        )
+
+        pulumi_s3.BucketObjectv2(
+            f"{name}-metadata",
+            bucket=self.market_data.bucket,
+            key=key,
+            content=data_serialized,
+            content_type="text/yaml",
+            opts=opts,
+            etag=etag,
+        )
+
+        output_data = data.apply(lambda x: to_dict(x))
+        return output_data
+
+    def read_resource_metadata(self, DataType: Type[MarketData], key):
+        content = _read_s3_file(
+            region=self.market_data.region, bucket=self.market_data.bucket, key=key
+        )
+        return from_yaml(DataType, content)
+
+
+def _read_s3_file(region: str, bucket: str, key: str) -> str:
+    s3 = boto3.client("s3")
+    key = key.lstrip("/")
+    logger.info(f"fetching {bucket}/{key}")
+    response = s3.get_object(Region=region, Bucket=bucket, Key=key)
+    byte_content = response["Body"].read()
+    content = byte_content.decode("utf-8")
+    return content
