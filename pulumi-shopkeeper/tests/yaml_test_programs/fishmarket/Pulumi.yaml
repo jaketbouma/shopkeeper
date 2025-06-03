@@ -4,7 +4,7 @@ name: fishmarket
 description: A place for fisherfolk to sell their catch.
 packages:
   pulumi-shopkeeper:
-    source: ../../pulumi-shopkeeper
+    source: ../../../../pulumi-shopkeeper
     version: 0.0.0
 resources:
   #fishmarketDev:
@@ -18,21 +18,10 @@ resources:
   #        fishmonger: John
   #        address: 1 Fish Road, Splashtown, 0001
   fishmarketProd:
-    type: pulumi-shopkeeper:LocalMarket
+    type: pulumi-shopkeeper:LocalMarketV1
     properties:
       name: FishMarketProd
       description: Fishmarket (Prod)
-      marketType: LocalMarket
       path: /tmp/fishmarket-prod
-  fredTheFisherman:
-    type: pulumi-shopkeeper:LocalProducer
-    properties:
-      name: fredTheFisherman
-      description: Fred the Fisherman
-      color: fRED
-      market:
-        metadataFile: /tmp/metadata
-        marketType: LocalMarket
-
 outputs:
   fishmarketProdMarketData: ${fishmarketProd.marketData}

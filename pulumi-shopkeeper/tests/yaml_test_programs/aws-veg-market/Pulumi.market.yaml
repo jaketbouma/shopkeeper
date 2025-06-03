@@ -1,0 +1,17 @@
+# Set up the markets
+runtime: yaml
+name: pytest-aws-veg-market
+description: A place for veggie growers to sell their produce.
+packages:
+  pulumi-shopkeeper:
+    source: ../../../../pulumi-shopkeeper
+    version: 0.0.0
+resources:
+  vegProd:
+    type: pulumi-shopkeeper:AwsMarketV1
+    properties:
+      name: VegMarketProd
+      description: Vegmarket (Prod)
+      path: /tmp/vegmarket-prod
+outputs:
+  vegMarketConfiguration: ${vegProd.marketData.marketConfiguration}

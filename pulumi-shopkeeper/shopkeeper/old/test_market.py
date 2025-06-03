@@ -74,7 +74,7 @@ def some_market_data(
         """
         A simple inline pulumi program to declare a market
         """
-        from shopkeeper.market import Market
+        from shopkeeper.base_market import Market
 
         m = Market(
             name=f"{BackendComponent.__name__}:veg-market",
