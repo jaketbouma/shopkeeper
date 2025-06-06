@@ -1,0 +1,22 @@
+# Set up the markets
+runtime: yaml
+name: test-aws
+description: A place for veggie growers to sell their produce.
+packages:
+  pulumi-shopkeeper:
+    source: ../../../../../pulumi-shopkeeper
+    version: 0.0.0
+resources:
+  vegProd:
+    type: pulumi-shopkeeper:AwsMarketV1
+    properties:
+      name: VegMarketProd
+      description: Vegmarket (Prod)
+      bucketPrefix: pytest-aws-veg-market
+outputs:
+  someMarketData: ${vegProd.marketData}
+  # there's a bug in passing complex types as yaml outputs
+  bucket:  ${vegProd.marketConfiguration["bucket"]}
+  marketMetadataKey: ${vegProd.marketConfiguration["market_metadata_key"]}
+  marketType: ${vegProd.marketConfiguration["market_type"]}
+  region: ${vegProd.marketConfiguration["region"]}

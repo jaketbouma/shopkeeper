@@ -1,7 +1,7 @@
 import hashlib
 import logging
 from dataclasses import dataclass
-from typing import Optional, Type
+from typing import Any, Optional, Type
 
 import boto3
 from pulumi import Output, ResourceOptions
@@ -30,6 +30,7 @@ class AwsMarketV1Args(MarketArgs):
 @serde
 @dataclass()
 class AwsMarketV1Configuration(MarketConfiguration):
+    market_type: str  # must explicitly overload
     bucket: str
     region: str
     market_metadata_key: str
@@ -46,7 +47,8 @@ class AwsMarketV1Data(MarketData):
 
 
 class AwsMarketV1(Market):
-    market_data: Output[dict[str, str]]
+    market_data: Output[dict[str, Any]]
+    market_configuration: Output[dict[str, str]]
 
     def __init__(self, name, args: AwsMarketV1Args, opts):
         super().__init__(name, args, opts)
@@ -108,12 +110,21 @@ class AwsMarketV1(Market):
             etag=etag,
         )
 
-        market_data_as_dict: Output[dict[str, str]] = market_data.apply(
+        market_data_as_dict: Output[dict[str, Any]] = market_data.apply(
             lambda m: to_dict(m)
+        )
+        self.market_configuration: Output[dict[str, str]] = market_data.apply(
+            lambda x: to_dict(x.market_configuration)
         )
 
         self.market_data = market_data_as_dict
-        self.register_outputs({"marketData": self.market_data})
+        # self.register_outputs(
+        #    {
+        #        "marketData": self.market_data,
+        #        "marketConfiguration": self.market_configuration,
+        #    }
+        # )
+        self.register_outputs({})
 
 
 class AwsMarketV1Client(MarketClient):
@@ -129,11 +140,11 @@ class AwsMarketV1Client(MarketClient):
 
     def declare_resource_metadata(
         self,
-        data: Output[AwsMarketV1Data],
+        data: Output[Any],
         key: str,
         name: str,
         opts: Optional[ResourceOptions] = None,
-    ) -> Output[dict[str, str]]:
+    ) -> Output[dict[str, Any]]:
         # serialize to json using pyserde and calculate Etag
         data_serialized: Output[str] = data.apply(lambda m: to_yaml(m))
         etag: Output[str] = data_serialized.apply(

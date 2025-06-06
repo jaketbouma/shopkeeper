@@ -39,7 +39,8 @@
 				"ms-python.python",
 				"pulumi.pulumi-vscode-tools",
 				"samuelcolvin.jinjahtml",
-				"tamasfe.even-better-toml"
+				"tamasfe.even-better-toml",
+				"pulumi.pulumi-lsp-client"
 			]
 		}
 	},

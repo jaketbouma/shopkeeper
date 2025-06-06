@@ -19,11 +19,12 @@ class AwsProducerV1Args(ProducerArgs):
 @serde
 @dataclass
 class AwsProducerV1Data(ProducerData):
+    # this class does nothing
     pass
 
 
 class AwsProducerV1(Producer):
-    producer_data: Output[dict[str, str]]
+    producer_data: Output[dict[str, Any]]
     market_client: AwsMarketV1Client
 
     def __init__(
