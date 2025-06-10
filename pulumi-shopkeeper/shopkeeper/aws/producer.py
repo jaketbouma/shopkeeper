@@ -1,19 +1,28 @@
+# ruff: noqa: F401
+
 import logging
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any, Optional, TypedDict
 
-from pulumi import Output, ResourceOptions
+from pulumi import Input, Output, ResourceOptions
+from pydantic import create_model
 from serde import serde
 
-from shopkeeper.aws.market import AwsMarketV1Client, AwsMarketV1Configuration
-from shopkeeper.base_producer import Producer, ProducerArgs, ProducerData
+from shopkeeper.aws.market import AwsMarketV1Client
+from shopkeeper.base_producer import Producer, ProducerData
 
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class AwsProducerV1Args(ProducerArgs):
-    market: AwsMarketV1Configuration
+class AwsProducerV1Args(TypedDict):
+    name: Input[str]
+    description: Input[str]
+    # market: AwsMarketV1Configuration
+
+
+AwsProducerV1ArgsModel = create_model(
+    "AwsProducerV1ArgsModel", **AwsProducerV1Args.__annotations__
+)
 
 
 @serde

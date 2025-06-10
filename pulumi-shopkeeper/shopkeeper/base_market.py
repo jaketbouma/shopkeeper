@@ -1,8 +1,11 @@
+# ruff: noqa: F401
+import inspect
 import logging
 from dataclasses import dataclass
-from typing import Any, Optional, Type, TypeVar
+from typing import Any, Optional, Type, TypedDict, TypeVar
 
 from pulumi import ComponentResource, Output, ResourceOptions
+from pydantic import create_model  # noqa
 from serde import from_dict
 
 logger = logging.getLogger(__name__)
@@ -48,8 +51,7 @@ class MarketClient:
         return Market.get_market_metadata_key(self.market_name)
 
 
-@dataclass
-class MarketArgs:
+class MarketArgs(TypedDict):
     name: str
     description: str
     # market_version: is the resource type t
@@ -59,7 +61,6 @@ class MarketArgs:
 class MarketData:
     market_name: str
     market_type: str
-    market_configuration: Any
 
 
 class Market(ComponentResource):
@@ -88,13 +89,6 @@ class Market(ComponentResource):
         args: MarketArgs,
         opts: Optional[ResourceOptions] = None,
     ) -> None:
-        # if args is a dict coming from pulumi yaml, then deserialize
-        args_type = self.__class__.__init__.__annotations__["args"]
-        if isinstance(args, dict):
-            self.safe_args = from_dict(args_type, args)
-        elif isinstance(args, args_type):
-            self.safe_args = args
-
         # the name of the component we're registering
         typ = self.__class__.__name__
         t = f"pulumi-shopkeeper:index:{typ}"

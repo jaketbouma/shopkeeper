@@ -28,11 +28,7 @@ resources:
       name: "Pete the Pumpkin Producer"
       description: Pumpkin Market (Prod)
       market:
-        # literals are ok, but these are typed.
-        bucket           : x ${marketStack.outputs["bucket"]}
-        marketMetadataKey: x ${marketStack.outputs["marketMetadataKey"]}
-        marketType       : x #${marketStack.outputs["marketType"]}
-        region           : x ${marketStack.outputs["region"]}
+        something: 10
 
 outputs:
   #producerData: ${prod.producerData}

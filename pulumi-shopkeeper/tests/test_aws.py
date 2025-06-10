@@ -4,7 +4,7 @@ import pulumi
 import pytest
 from serde import from_dict
 
-from shopkeeper.aws.market import AwsMarketV1Args, AwsMarketV1Configuration
+from shopkeeper.aws.market import AwsMarketV1Args
 from shopkeeper.aws.producer import AwsProducerV1, AwsProducerV1Args
 from shopkeeper.factory import market_factory
 
@@ -62,7 +62,7 @@ def test_aws_producer(some_market):
             args=AwsProducerV1Args(
                 name=name,
                 description="pytest aws producer",
-                market=AwsMarketV1Configuration(**some_market["market_configuration"]),
+                # market=AwsMarketV1Configuration(**some_market["market_configuration"]),
             ),
         )
         pulumi.export("someProducerData", producer.producer_data)
@@ -118,6 +118,7 @@ def test_yaml_producer(aws_test_market_output):
     up_result = pulumi_up_for_test_programs(
         stack_name=stack_name,
         test_program_folder="yaml_test_programs/aws-veg-market/producer",
+        refresh=False,
     )
     output = up_result.outputs["producerData"]
     assert output is not None

@@ -80,7 +80,6 @@ def some_markets(some_market_inputs, pytestconfig) -> dict[str, str]:
 def test_markets(some_markets, some_market_inputs):
     assert some_markets["market_type"] == some_market_inputs["market_type"]
     assert some_markets["market_name"] == some_market_inputs["name"]
-    assert some_markets["market_configuration"] is not None
 
 
 def test_market_clients(some_markets):
