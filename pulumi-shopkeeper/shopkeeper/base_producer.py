@@ -1,6 +1,6 @@
 import logging
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any, Optional, TypedDict
 
 from pulumi import ComponentResource, Output, ResourceOptions
 from serde import from_dict
@@ -11,11 +11,10 @@ from shopkeeper.factory import market_factory
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class ProducerArgs:
-    market: Any
+class ProducerArgs(TypedDict):
     name: str
     description: str
+    market: Any
 
 
 @dataclass
@@ -36,7 +35,7 @@ class Producer(ComponentResource):
     def __init__(
         self,
         name: str,
-        args: ProducerArgs,
+        args: Any,
         opts: Optional[ResourceOptions] = None,
     ) -> None:
         # if args is a dict coming from pulumi yaml, then deserialize

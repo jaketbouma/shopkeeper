@@ -1,19 +1,17 @@
 import hashlib
 import logging
 from dataclasses import dataclass
-from typing import Any, Optional, Type
+from typing import Any, Optional, Type, TypedDict
 
 import boto3
-from pulumi import Output, ResourceOptions
+from pulumi import Input, Output, ResourceOptions
 from pulumi_aws import s3 as pulumi_s3
 from serde import serde, to_dict
 from serde.yaml import from_yaml, to_yaml
 
 from shopkeeper.base_market import (
     Market,
-    MarketArgs,
     MarketClient,
-    MarketConfiguration,
     MarketData,
 )
 
@@ -22,28 +20,38 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-@dataclass()
-class AwsMarketV1Args(MarketArgs):
-    bucket_prefix: Optional[str] = None
+class AwsMarketV1Args(TypedDict):
+    name: Input[str]
+    description: Input[str]
+    bucket_prefix: Input[str]
+
+
+# for child resources...
+class AwsMarketV1ConfigurationArgs(TypedDict):
+    market_type: Input[str]
+    bucket: Input[str]
+    region: Input[str]
+    market_metadata_key: Input[str]
 
 
 @serde
 @dataclass()
-class AwsMarketV1Configuration(MarketConfiguration):
-    market_type: str  # must explicitly overload
+class AwsMarketV1Configuration:
+    market_type: str
     bucket: str
     region: str
     market_metadata_key: str
 
 
 @serde
-@dataclass(kw_only=True)
+@dataclass
 class AwsMarketV1Data(MarketData):
-    region: str
-    bucket: str
     bucket_arn: str
+    # .market_configuration
+    market_type: str
+    bucket: str
+    region: str
     market_metadata_key: str
-    market_configuration: AwsMarketV1Configuration
 
 
 class AwsMarketV1(Market):
@@ -58,7 +66,7 @@ class AwsMarketV1(Market):
         # create bucket and set permissions
         bucket = pulumi_s3.BucketV2(
             f"{name}-bucket",
-            bucket_prefix=self.safe_args.bucket_prefix,
+            bucket_prefix=args["bucket_prefix"],
             force_destroy=True,
             tags=None,
         )
@@ -77,12 +85,6 @@ class AwsMarketV1(Market):
                 market_type=market_type,
                 market_name=name,
                 market_metadata_key=filename,
-                market_configuration=AwsMarketV1Configuration(
-                    market_type=market_type,
-                    bucket=d["bucket"],
-                    region=d["region"],
-                    market_metadata_key=filename,
-                ),
                 **d,
             )
             return market_data
@@ -113,9 +115,11 @@ class AwsMarketV1(Market):
         market_data_as_dict: Output[dict[str, Any]] = market_data.apply(
             lambda m: to_dict(m)
         )
-        self.market_configuration: Output[dict[str, str]] = market_data.apply(
-            lambda x: to_dict(x.market_configuration)
-        )
+        # self.market_configuration: Output[dict[str, str]] = market_data_as_dict.apply(
+        #    lambda x: {
+        #        k: v for k, v in x.items() if k in AwsMarketV1ConfigurationArgs.keys()
+        #    }
+        # )
 
         self.market_data = market_data_as_dict
         # self.register_outputs(

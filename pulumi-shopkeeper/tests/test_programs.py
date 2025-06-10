@@ -21,7 +21,7 @@ yaml_programs = [
 ]
 
 
-def pulumi_up_for_test_programs(stack_name, test_program_folder):
+def pulumi_up_for_test_programs(stack_name, test_program_folder, refresh=True):
     work_dir = os.path.abspath(
         os.path.join(os.path.dirname(__file__), test_program_folder)
     )
@@ -36,9 +36,10 @@ def pulumi_up_for_test_programs(stack_name, test_program_folder):
     )
     logger.info(f"{stack_name}: successfully initialized stack")
 
-    logger.info(f"{stack_name}: refreshing stack")
-    stack.refresh(on_output=logger.info)
-    logger.info(f"{stack_name}: refresh complete")
+    if refresh:
+        logger.info(f"{stack_name}: refreshing stack")
+        stack.refresh(on_output=logger.info)
+        logger.info(f"{stack_name}: refresh complete")
 
     up_result = stack.up()
     assert up_result.summary.result == "succeeded"
