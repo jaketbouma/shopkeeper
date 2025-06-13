@@ -7,7 +7,7 @@ packages:
     source: /workspaces/shopkeeper/pulumi-shopkeeper
     version: 0.0.0
 resources:
-  vegProd:
+  nothingDev:
     type: pulumi-shopkeeper:Nothing
     properties:
       something: Hello!
