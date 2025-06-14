@@ -12,9 +12,25 @@ MarketConfigurationType = TypeVar(
     "MarketConfigurationType", bound="MarketConfiguration"
 )
 
+from dataclasses import asdict, is_dataclass
+
+import yaml
+
+
+class SerializationMixin:
+    # can't use pyserde, so we do it ourselves.. should move this up :)
+    def to_dict(self) -> dict[str, Any]:
+        if is_dataclass(self):
+            return asdict(self)
+        else:
+            raise (Exception("Serialization Mixin only supports dataclasses"))
+
+    def to_yaml(self) -> str:
+        return yaml.safe_dump(self.to_dict())
+
 
 @dataclass
-class MarketConfiguration:
+class MarketConfiguration(SerializationMixin):
     market_type: str
     # although subclasses contain this information,
     # market type is required explicitly here to support
@@ -49,14 +65,14 @@ class MarketClient:
 
 
 @dataclass
-class MarketArgs:
+class MarketArgs(SerializationMixin):
     name: str
     description: str
     # market_version: is the resource type t
 
 
 @dataclass
-class MarketData:
+class MarketData(SerializationMixin):
     market_name: str
     market_type: str
     market_configuration: Any

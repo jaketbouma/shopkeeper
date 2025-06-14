@@ -1,13 +1,13 @@
+# ruff: noqa: F401
 import hashlib
 import logging
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from typing import Any, Optional, Type
 
 import boto3
-from pulumi import Output, ResourceOptions
+import yaml
+from pulumi import Input, Output, ResourceOptions
 from pulumi_aws import s3 as pulumi_s3
-from serde import serde, to_dict
-from serde.yaml import from_yaml, to_yaml
 
 from shopkeeper.base_market import (
     Market,
@@ -27,28 +27,32 @@ class AwsMarketV1Args(MarketArgs):
     bucket_prefix: Optional[str] = None
 
 
-@serde
 @dataclass()
 class AwsMarketV1Configuration(MarketConfiguration):
-    market_type: str  # must explicitly overload
-    bucket: str
-    region: str
-    market_metadata_key: str
+    market_type: Input[str]  # must explicitly overload
+    bucket: Input[str]
+    region: Input[str]
+    market_metadata_key: Input[str]
+
+    # can't use pyserde, so we do it ourselves.. should move this up :)
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    def to_yaml(self) -> str:
+        return yaml.safe_dump(self.to_dict())
 
 
-@serde
 @dataclass(kw_only=True)
 class AwsMarketV1Data(MarketData):
     region: str
     bucket: str
     bucket_arn: str
     market_metadata_key: str
-    market_configuration: AwsMarketV1Configuration
 
 
 class AwsMarketV1(Market):
     market_data: Output[dict[str, Any]]
-    market_configuration: Output[dict[str, str]]
+    market_configuration: Output[dict[str, Any]]
 
     def __init__(self, name, args: AwsMarketV1Args, opts):
         super().__init__(name, args, opts)
@@ -71,18 +75,26 @@ class AwsMarketV1(Market):
             opts=ResourceOptions(parent=bucket),
         )
 
+        # Market configuration
+        def prepare_market_configuration(d) -> dict[str, Any]:
+            market_configuration = AwsMarketV1Configuration(
+                market_type=self.__class__.__name__, market_metadata_key=filename, **d
+            )
+            market_configuration_dict = market_configuration.to_dict()
+            return market_configuration_dict
+
+        self.market_configuration: Output[dict[str, Any]] = Output.all(
+            bucket=bucket.bucket,
+            region=bucket.region,
+        ).apply(prepare_market_configuration)
+
+        # Market data
         def prepare_market_data(d) -> AwsMarketV1Data:
             market_type = self.__class__.__name__
             market_data = AwsMarketV1Data(
                 market_type=market_type,
                 market_name=name,
                 market_metadata_key=filename,
-                market_configuration=AwsMarketV1Configuration(
-                    market_type=market_type,
-                    bucket=d["bucket"],
-                    region=d["region"],
-                    market_metadata_key=filename,
-                ),
                 **d,
             )
             return market_data
@@ -93,8 +105,7 @@ class AwsMarketV1(Market):
             bucket_arn=bucket.arn,
         ).apply(prepare_market_data)
 
-        # serialize to json using pyserde and calculate Etag
-        market_data_serialized: Output[str] = market_data.apply(lambda m: to_yaml(m))
+        market_data_serialized: Output[str] = market_data.apply(lambda m: m.to_yaml())
         etag: Output[str] = market_data_serialized.apply(
             lambda s: hashlib.md5(s.encode()).hexdigest()
         )
@@ -110,20 +121,9 @@ class AwsMarketV1(Market):
             etag=etag,
         )
 
-        market_data_as_dict: Output[dict[str, Any]] = market_data.apply(
-            lambda m: to_dict(m)
-        )
-        self.market_configuration: Output[dict[str, str]] = market_data.apply(
-            lambda x: to_dict(x.market_configuration)
-        )
-
+        market_data_as_dict: Output[dict[str, Any]] = market_data.apply(asdict)
         self.market_data = market_data_as_dict
-        # self.register_outputs(
-        #    {
-        #        "marketData": self.market_data,
-        #        "marketConfiguration": self.market_configuration,
-        #    }
-        # )
+
         self.register_outputs({})
 
 
@@ -146,7 +146,7 @@ class AwsMarketV1Client(MarketClient):
         opts: Optional[ResourceOptions] = None,
     ) -> Output[dict[str, Any]]:
         # serialize to json using pyserde and calculate Etag
-        data_serialized: Output[str] = data.apply(lambda m: to_yaml(m))
+        data_serialized: Output[str] = data.apply(lambda m: output_to_yaml(m))
         etag: Output[str] = data_serialized.apply(
             lambda s: hashlib.md5(s.encode()).hexdigest()
         )
@@ -161,7 +161,7 @@ class AwsMarketV1Client(MarketClient):
             etag=etag,
         )
 
-        output_data = data.apply(lambda x: to_dict(x))
+        output_data = data.apply(lambda x: output_to_dict(x))
         return output_data
 
     def read_resource_metadata(self, DataType: Type[MarketData], key):
