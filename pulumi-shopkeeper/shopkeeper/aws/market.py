@@ -27,19 +27,12 @@ class AwsMarketV1Args(MarketArgs):
     bucket_prefix: Optional[str] = None
 
 
-@dataclass()
+@dataclass(kw_only=True)
 class AwsMarketV1Configuration(MarketConfiguration):
-    market_type: Input[str]  # must explicitly overload
+    # market_type: Input[str]  # must explicitly overload
     bucket: Input[str]
     region: Input[str]
     market_metadata_key: Input[str]
-
-    # can't use pyserde, so we do it ourselves.. should move this up :)
-    def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
-
-    def to_yaml(self) -> str:
-        return yaml.safe_dump(self.to_dict())
 
 
 @dataclass(kw_only=True)
@@ -47,12 +40,12 @@ class AwsMarketV1Data(MarketData):
     region: str
     bucket: str
     bucket_arn: str
-    market_metadata_key: str
 
 
 class AwsMarketV1(Market):
-    market_data: Output[dict[str, Any]]
-    market_configuration: Output[dict[str, Any]]
+    # need to explicitly mention these for languages other than python
+    market_data: Output[dict[str, str]]
+    market_configuration: Output[dict[str, str]]
 
     def __init__(self, name, args: AwsMarketV1Args, opts):
         super().__init__(name, args, opts)
@@ -83,7 +76,7 @@ class AwsMarketV1(Market):
             market_configuration_dict = market_configuration.to_dict()
             return market_configuration_dict
 
-        self.market_configuration: Output[dict[str, Any]] = Output.all(
+        self.market_configuration = Output.all(
             bucket=bucket.bucket,
             region=bucket.region,
         ).apply(prepare_market_configuration)
@@ -93,20 +86,20 @@ class AwsMarketV1(Market):
             market_type = self.__class__.__name__
             market_data = AwsMarketV1Data(
                 market_type=market_type,
-                market_name=name,
-                market_metadata_key=filename,
+                name=name,
                 **d,
             )
             return market_data
 
-        market_data: Output[AwsMarketV1Data] = Output.all(
+        market_data = Output.all(
             bucket=bucket.bucket,
             region=bucket.region,
             bucket_arn=bucket.arn,
+            description=self.safe_args.description,
         ).apply(prepare_market_data)
 
-        market_data_serialized: Output[str] = market_data.apply(lambda m: m.to_yaml())
-        etag: Output[str] = market_data_serialized.apply(
+        market_data_serialized = market_data.apply(lambda m: m.to_yaml())
+        etag = market_data_serialized.apply(
             lambda s: hashlib.md5(s.encode()).hexdigest()
         )
 
@@ -114,20 +107,28 @@ class AwsMarketV1(Market):
         pulumi_s3.BucketObjectv2(
             f"{name}-metadata-json",
             bucket=bucket.bucket,
-            key=market_data.market_metadata_key,
+            key=filename,
             content=market_data_serialized,
             content_type="text/json",
             opts=ResourceOptions(parent=bucket),
             etag=etag,
         )
 
-        market_data_as_dict: Output[dict[str, Any]] = market_data.apply(asdict)
+        market_data_as_dict = market_data.apply(asdict)
         self.market_data = market_data_as_dict
 
-        self.register_outputs({})
+        self.register_outputs(
+            {
+                "marketData": self.market_data,
+                "marketConfiguration": self.market_configuration,
+            }
+        )
 
 
 class AwsMarketV1Client(MarketClient):
+    market_configuration: AwsMarketV1Configuration
+    market_data: AwsMarketV1Data
+
     def __init__(self, market_configuration: AwsMarketV1Configuration):
         super().__init__(market_configuration=market_configuration)
 
@@ -136,7 +137,7 @@ class AwsMarketV1Client(MarketClient):
             bucket=market_configuration.bucket,
             key=market_configuration.market_metadata_key,
         )
-        self.market_data = from_yaml(AwsMarketV1Data, yaml_market_data)
+        self.market_data = AwsMarketV1Data.from_yaml(yaml_market_data)
 
     def declare_resource_metadata(
         self,
@@ -145,15 +146,15 @@ class AwsMarketV1Client(MarketClient):
         name: str,
         opts: Optional[ResourceOptions] = None,
     ) -> Output[dict[str, Any]]:
-        # serialize to json using pyserde and calculate Etag
-        data_serialized: Output[str] = data.apply(lambda m: output_to_yaml(m))
+        # serialize to yaml and calculate Etag
+        data_serialized: Output[str] = data.apply(lambda m: m.to_yaml())
         etag: Output[str] = data_serialized.apply(
             lambda s: hashlib.md5(s.encode()).hexdigest()
         )
 
         pulumi_s3.BucketObjectv2(
             f"{name}-metadata",
-            bucket=self.market_data.bucket,
+            bucket=self.market_configuration.bucket,
             key=key,
             content=data_serialized,
             content_type="text/yaml",

@@ -1,9 +1,10 @@
 import logging
-from dataclasses import dataclass
+from abc import ABC
+from dataclasses import asdict, dataclass, is_dataclass
 from typing import Any, Optional, Type, TypeVar
 
+import yaml
 from pulumi import ComponentResource, Output, ResourceOptions
-from serde import from_dict
 
 logger = logging.getLogger(__name__)
 
@@ -12,13 +13,13 @@ MarketConfigurationType = TypeVar(
     "MarketConfigurationType", bound="MarketConfiguration"
 )
 
-from dataclasses import asdict, is_dataclass
-
-import yaml
-
 
 class SerializationMixin:
-    # can't use pyserde, so we do it ourselves.. should move this up :)
+    """
+    Mixin provides functions to serde Pulumi Input and Output types in dataclasses.
+    (Pyserde isn't happy about the ForwardRef[T] in Pulumi IO types)
+    """
+
     def to_dict(self) -> dict[str, Any]:
         if is_dataclass(self):
             return asdict(self)
@@ -27,6 +28,15 @@ class SerializationMixin:
 
     def to_yaml(self) -> str:
         return yaml.safe_dump(self.to_dict())
+
+    @classmethod
+    def from_yaml(cls, s: str):
+        data = yaml.safe_load(s)
+        return cls(**data)
+
+    @classmethod
+    def from_dict(cls, d: dict):
+        return cls(**d)
 
 
 @dataclass
@@ -39,9 +49,24 @@ class MarketConfiguration(SerializationMixin):
     # ...subclasses can extend...
 
 
-class MarketClient:
+@dataclass
+class MarketArgs(SerializationMixin):
+    name: str
+    description: str
+    # market_version: is the resource type t
+
+
+@dataclass
+class MarketData(SerializationMixin):
+    name: str
+    description: str
+    market_type: str
+
+
+class MarketClient(ABC):
     market_name: Optional[str] = None
     market_configuration: MarketConfiguration
+    market_data: MarketData
     market_metadata_version: str = "v1"
 
     def __init__(self, market_configuration: MarketConfiguration):
@@ -64,20 +89,6 @@ class MarketClient:
         return Market.get_market_metadata_key(self.market_name)
 
 
-@dataclass
-class MarketArgs(SerializationMixin):
-    name: str
-    description: str
-    # market_version: is the resource type t
-
-
-@dataclass
-class MarketData(SerializationMixin):
-    market_name: str
-    market_type: str
-    market_configuration: Any
-
-
 class Market(ComponentResource):
     """
     The Metadata structure;
@@ -95,6 +106,7 @@ class Market(ComponentResource):
     """
 
     market_data: Output[dict[str, str]]
+    market_configuration: Output[dict[str, str]]
     metadata_version: str = "v1"
     safe_args: Any
 
@@ -107,7 +119,7 @@ class Market(ComponentResource):
         # if args is a dict coming from pulumi yaml, then deserialize
         args_type = self.__class__.__init__.__annotations__["args"]
         if isinstance(args, dict):
-            self.safe_args = from_dict(args_type, args)
+            self.safe_args = args_type.from_dict(args)
         elif isinstance(args, args_type):
             self.safe_args = args
 
