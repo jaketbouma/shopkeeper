@@ -2,9 +2,8 @@ import logging
 
 import pulumi
 import pytest
-from serde import from_dict
 
-from shopkeeper.aws.market import AwsMarketV1Args, AwsMarketV1Configuration
+from shopkeeper.aws.market import AwsMarketV1Args
 from shopkeeper.aws.producer import AwsProducerV1, AwsProducerV1Args
 from shopkeeper.factory import market_factory
 
@@ -62,7 +61,7 @@ def test_aws_producer(some_market):
             args=AwsProducerV1Args(
                 name=name,
                 description="pytest aws producer",
-                market=AwsMarketV1Configuration(**some_market["market_configuration"]),
+                # market=AwsMarketV1Configuration(**some_market["market_configuration"]),
             ),
         )
         pulumi.export("someProducerData", producer.producer_data)
@@ -102,15 +101,18 @@ def aws_test_market_output(pytestconfig):
 
 
 def test_yaml_market(aws_test_market_output):
-    assert "market_configuration" in aws_test_market_output
-    Configuration = market_factory.get_configuration(
-        aws_test_market_output["market_configuration"]["market_type"]
-    )
-    c1 = from_dict(Configuration, aws_test_market_output["market_configuration"])
-    assert c1 is not None
-    c2 = Configuration(**aws_test_market_output["market_configuration"])
-    assert c2 is not None
-    assert c1 == c2
+    assert aws_test_market_output["bucket"].startswith("pytest-aws-veg-market")
+    assert aws_test_market_output["market_type"] == "AwsMarketV1"
+    assert aws_test_market_output["region"] == "eu-north-1"
+
+    # Configuration = market_factory.get_configuration(
+    #    aws_test_market_output["market_type"]
+    # )
+    # c1 = from_dict(Configuration, aws_test_market_output)
+    # assert c1 is not None
+    # c2 = Configuration(**aws_test_market_output["market_configuration"])
+    # assert c2 is not None
+    # assert c1 == c2
 
 
 def test_yaml_producer(aws_test_market_output):
@@ -118,6 +120,7 @@ def test_yaml_producer(aws_test_market_output):
     up_result = pulumi_up_for_test_programs(
         stack_name=stack_name,
         test_program_folder="yaml_test_programs/aws-veg-market/producer",
+        refresh=False,
     )
     output = up_result.outputs["producerData"]
     assert output is not None

@@ -15,8 +15,8 @@ resources:
       bucketPrefix: pytest-aws-veg-market
 outputs:
   someMarketData: ${vegProd.marketData}
-  # there's a bug in passing complex types as yaml outputs
-  bucket:  ${vegProd.marketConfiguration["bucket"]}
-  marketMetadataKey: ${vegProd.marketConfiguration["market_metadata_key"]}
-  marketType: ${vegProd.marketConfiguration["market_type"]}
-  region: ${vegProd.marketConfiguration["region"]}
+  someMarketConfiguration: ${vegProd.marketConfiguration}
+  # workaround: bug: yaml stack references can't dereference map outputs.
+  bucket: ${vegProd.marketData["bucket"]}
+  region: ${vegProd.marketData["region"]}
+  market_metadata_key: ${vegProd.marketData["marketMetadataKey"]}
