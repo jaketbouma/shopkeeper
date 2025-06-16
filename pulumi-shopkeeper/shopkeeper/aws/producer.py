@@ -5,7 +5,7 @@ from typing import Any, Optional, TypedDict
 from pulumi import Input, Output, ResourceOptions
 from serde import serde, to_dict
 
-from shopkeeper.aws.market import AwsMarketV1Client, AwsMarketV1Config
+from shopkeeper.aws.market import AwsMarketV1Config
 from shopkeeper.base_producer import Producer, ProducerMetadataV1
 
 logger = logging.getLogger(__name__)
@@ -27,8 +27,8 @@ class AwsProducerV1Data:
 
 class AwsProducerV1(Producer):
     producer_data: Output[dict[str, Any]]
-    market_client: AwsMarketV1Client
-    market_type: str = "AwsMarketV1"
+    # market_client: AwsMarketV1Client
+    # market_type: str = "AwsMarketV1"
 
     def __init__(
         self,
@@ -36,7 +36,7 @@ class AwsProducerV1(Producer):
         args: AwsProducerV1Args,
         opts: Optional[ResourceOptions] = None,
     ):
-        # self.market_type = "AwsMarketV1"
+        self.market_type = "AwsMarketV1"
 
         super().__init__(name, args, opts)
 

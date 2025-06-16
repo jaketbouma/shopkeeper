@@ -12,11 +12,11 @@ logging.basicConfig(level=logging.INFO)
 yaml_programs = [
     {
         "stack_name": "aws-market-market",
-        "program_folder": "yaml_test_programs/aws-veg-market/market",
+        "program_folder": "yaml_test_programs/aws-market-V1/market",
     },
     {
         "stack_name": "aws-market-producer",
-        "program_folder": "yaml_test_programs/aws-veg-market/producer",
+        "program_folder": "yaml_test_programs/aws-market-V1/producer",
     },
 ]
 
@@ -61,7 +61,6 @@ def yaml_test_stack(request):
         f"pulumi.yaml not found in {work_dir}"
     )
 
-    # Create our stack using a local program in the ../fargate directory
     stack = auto.create_or_select_stack(
         stack_name=stack_name, work_dir=work_dir, project_name="test-infra"
     )

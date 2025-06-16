@@ -16,8 +16,6 @@ class ProducerMetadataV1(TypedDict):
 
 class Producer(ComponentResource):
     producer_data: Output[Any]
-    metadata_version: str = "v1"
-    market_client: Any
     market_type: str
 
     def __init__(
