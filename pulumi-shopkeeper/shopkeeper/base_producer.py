@@ -9,12 +9,21 @@ logger = logging.getLogger(__name__)
 
 
 class ProducerMetadataV1(TypedDict):
+    """
+    Standard metadata common to all implementations of a producer
+    """
+
     name: Input[str]
     description: Input[str]
     version: Optional[str]
 
 
 class Producer(ComponentResource):
+    """
+    A producer resource declares infrastructure to help engineers
+    develop datasets, and publish them on the market.
+    """
+
     producer_data: Output[Any]
     market_type: str
 

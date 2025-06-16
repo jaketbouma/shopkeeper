@@ -12,7 +12,6 @@ pulumi-aws = "^6.79.2"
 boto3 = "^1.38.8"
 pulumi-std = "^2.2.0"
 pyserde = "^0.24.0"
-dacite = "^1.9.2"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3"

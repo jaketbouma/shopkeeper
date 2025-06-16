@@ -1,3 +1,7 @@
+"""
+Register market implementations here
+"""
+
 from shopkeeper.aws.market import (
     AwsMarketV1,
     AwsMarketV1Client,
