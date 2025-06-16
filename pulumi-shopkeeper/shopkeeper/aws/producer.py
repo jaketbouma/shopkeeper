@@ -2,25 +2,26 @@ import logging
 from dataclasses import dataclass
 from typing import Any, Optional
 
-from pulumi import Output, ResourceOptions
-from serde import serde
+from pulumi import Input, Output, ResourceOptions
 
-from shopkeeper.aws.market import AwsMarketV1Client, AwsMarketV1Configuration
-from shopkeeper.base_producer import Producer, ProducerArgs, ProducerData
+from shopkeeper.aws.market import AwsMarketV1Client, AwsMarketV1Config
+from shopkeeper.base_producer import Producer, ProducerMetadataV1
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
-class AwsProducerV1Args(ProducerArgs):
-    market: AwsMarketV1Configuration
+class AwsProducerV1Args:
+    market: Input[AwsMarketV1Config]
+    metadata: Input[ProducerMetadataV1]
 
 
-@serde
 @dataclass
-class AwsProducerV1Data(ProducerData):
-    # this class does nothing
-    pass
+class AwsProducerV1Data:
+    name: str
+    type: str
+    metadata: ProducerMetadataV1
+    configuration: AwsMarketV1Config
 
 
 class AwsProducerV1(Producer):

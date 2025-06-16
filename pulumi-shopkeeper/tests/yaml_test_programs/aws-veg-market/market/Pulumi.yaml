@@ -8,13 +8,17 @@ packages:
     version: 0.0.0
 resources:
   vegProd:
+    name: anotherName
     type: pulumi-shopkeeper:AwsMarketV1
     properties:
-      name: VegMarketProd
-      description: Vegmarket (Prod)
+      metadata:
+        description: A blue market for vegetables
+        color: blue
+        environment: dev
       bucketPrefix: pytest-aws-veg-market
 outputs:
   someMarketData: ${vegProd.marketData}
+  someMarketConfiguration: ${vegProd.marketConfiguration}
   # there's a bug in passing complex types as yaml outputs
   bucket:  ${vegProd.marketConfiguration["bucket"]}
   marketMetadataKey: ${vegProd.marketConfiguration["market_metadata_key"]}

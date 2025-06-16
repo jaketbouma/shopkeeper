@@ -1,17 +1,17 @@
 import logging
 from abc import ABC
-from dataclasses import asdict, dataclass, is_dataclass
-from typing import Any, Optional, Type, TypeVar
+from dataclasses import asdict, is_dataclass
+from typing import Any, Optional, Type, TypedDict
 
+import dacite
+
+# can't use dacite either
+# error: pulumi-shopkeeper:index:AwsProducerV1 resource 'dev' has a problem:
+# Unexpected <class 'Exception'>: can not resolve forward reference: name 'T' is not defined:
 import yaml
-from pulumi import ComponentResource, Output, ResourceOptions
+from pulumi import ComponentResource, Input, Output, ResourceOptions
 
 logger = logging.getLogger(__name__)
-
-
-MarketConfigurationType = TypeVar(
-    "MarketConfigurationType", bound="MarketConfiguration"
-)
 
 
 class SerializationMixin:
@@ -35,43 +35,23 @@ class SerializationMixin:
         return cls(**data)
 
     @classmethod
-    def from_dict(cls, d: dict):
-        return cls(**d)
+    def from_dict(cls, data: dict):
+        logger.info(data)
+        return dacite.from_dict(cls, data, dacite.Config(forward_references={"T": Any}))
 
 
-@dataclass
-class MarketConfiguration(SerializationMixin):
-    market_type: str
-    # although subclasses contain this information,
-    # market type is required explicitly here to support
-    # the Pulumi Yaml interface, which has no knowledge of the subclasses.
-
-    # ...subclasses can extend...
-
-
-@dataclass
-class MarketArgs(SerializationMixin):
-    name: str
-    description: str
-    # market_version: is the resource type t
-
-
-@dataclass
-class MarketData(SerializationMixin):
-    name: str
-    description: str
-    market_type: str
+class MarketMetadataV1(TypedDict):
+    description: Optional[Input[str]]
+    color: Optional[Input[str]]
+    environment: Optional[Input[str]]
 
 
 class MarketClient(ABC):
     market_name: Optional[str] = None
-    market_configuration: MarketConfiguration
-    market_data: MarketData
     market_metadata_version: str = "v1"
 
-    def __init__(self, market_configuration: MarketConfiguration):
-        self.market_configuration = market_configuration
-        self.market_type = market_configuration.market_type
+    def __init__(self, **kwargs):
+        pass
 
     def get_producer_metadata_key(self, producer_name):
         """
@@ -113,15 +93,11 @@ class Market(ComponentResource):
     def __init__(
         self,
         name: str,
-        args: MarketArgs,
+        args: Any,
         opts: Optional[ResourceOptions] = None,
     ) -> None:
         # if args is a dict coming from pulumi yaml, then deserialize
-        args_type = self.__class__.__init__.__annotations__["args"]
-        if isinstance(args, dict):
-            self.safe_args = args_type.from_dict(args)
-        elif isinstance(args, args_type):
-            self.safe_args = args
+        self.args_type = self.__class__.__init__.__annotations__["args"]
 
         # the name of the component we're registering
         typ = self.__class__.__name__
@@ -147,7 +123,7 @@ class Market(ComponentResource):
 class MarketFactory:
     _clients: dict[str, type[MarketClient]]
     _components: dict[str, type[Market]]
-    _configurations: dict[str, type[MarketConfiguration]]
+    _configurations: dict[str, Any]
 
     def __init__(self):
         self._clients = {}
@@ -158,7 +134,7 @@ class MarketFactory:
         self,
         market: Type["Market"],
         client: Type[MarketClient],
-        configuration: Type[MarketConfiguration],
+        configuration: Type[Any],
     ):
         market_type = market.__name__
         self._components[market_type] = market
@@ -174,9 +150,7 @@ class MarketFactory:
     def get_configuration(self, market_type: str):
         return self._configurations[market_type]
 
-    def configure_client(
-        self, market_configuration: MarketConfiguration
-    ) -> MarketClient:
+    def configure_client(self, market_configuration: Any) -> MarketClient:
         MC = self._clients[market_configuration.market_type]
         mc = MC(market_configuration)
         return mc

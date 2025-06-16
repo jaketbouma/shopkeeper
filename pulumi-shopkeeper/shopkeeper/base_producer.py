@@ -2,29 +2,19 @@ import logging
 from dataclasses import dataclass
 from typing import Any, Optional
 
-from pulumi import ComponentResource, Output, ResourceOptions
-from serde import from_dict
+from pulumi import ComponentResource, Input, Output, ResourceOptions
 
-from shopkeeper.base_market import MarketClient, MarketConfiguration
+from shopkeeper.base_market import MarketClient, SerializationMixin
 from shopkeeper.factory import market_factory
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
-class ProducerArgs:
-    market: Any
-    name: str
-    description: str
-
-
-@dataclass
-class ProducerData:
-    market: MarketConfiguration | Any
-    producer_type: str
-    name: str
-    description: str
-    key: str
+class ProducerMetadataV1(SerializationMixin):
+    name: Input[str]
+    description: Input[str]
+    version: Optional[str] = "v1"
 
 
 class Producer(ComponentResource):
@@ -36,13 +26,13 @@ class Producer(ComponentResource):
     def __init__(
         self,
         name: str,
-        args: ProducerArgs,
+        args: Any,
         opts: Optional[ResourceOptions] = None,
     ) -> None:
         # if args is a dict coming from pulumi yaml, then deserialize
         args_type = self.__class__.__init__.__annotations__["args"]
         if isinstance(args, dict):
-            self.safe_args = from_dict(args_type, args)
+            self.safe_args = args_type.from_dict(args)
         elif isinstance(args, args_type):
             self.safe_args = args
 
