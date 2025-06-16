@@ -1,52 +1,27 @@
 import logging
 from abc import ABC
-from dataclasses import asdict, is_dataclass
 from typing import Any, Optional, Type, TypedDict
 
-import dacite
-
-# can't use dacite either
-# error: pulumi-shopkeeper:index:AwsProducerV1 resource 'dev' has a problem:
-# Unexpected <class 'Exception'>: can not resolve forward reference: name 'T' is not defined:
-import yaml
 from pulumi import ComponentResource, Input, Output, ResourceOptions
 
 logger = logging.getLogger(__name__)
 
 
-class SerializationMixin:
-    """
-    Mixin provides functions to serde Pulumi Input and Output types in dataclasses.
-    (Pyserde isn't happy about the ForwardRef[T] in Pulumi IO types)
-    """
-
-    def to_dict(self) -> dict[str, Any]:
-        if is_dataclass(self):
-            return asdict(self)
-        else:
-            raise (Exception("Serialization Mixin only supports dataclasses"))
-
-    def to_yaml(self) -> str:
-        return yaml.safe_dump(self.to_dict())
-
-    @classmethod
-    def from_yaml(cls, s: str):
-        data = yaml.safe_load(s)
-        return cls(**data)
-
-    @classmethod
-    def from_dict(cls, data: dict):
-        logger.info(data)
-        return dacite.from_dict(cls, data, dacite.Config(forward_references={"T": Any}))
-
-
 class MarketMetadataV1(TypedDict):
-    description: Optional[Input[str]]
+    """
+    Standard metadata common to all implementations of a market.
+    """
+
+    description: Input[str]
     color: Optional[Input[str]]
     environment: Optional[Input[str]]
 
 
 class MarketClient(ABC):
+    """
+    A market client is used by data platform resources to interact with a market.
+    """
+
     market_name: Optional[str] = None
     market_metadata_version: str = "v1"
 
@@ -69,20 +44,12 @@ class MarketClient(ABC):
         return Market.get_market_metadata_key(self.market_name)
 
 
-class Market(ComponentResource):
+class Market(ComponentResource, ABC):
     """
-    The Metadata structure;
+    A market provides storage and organization of metadata of all
+    other data platform resources.
 
-        market={market-name}/
-        ├── metadata.json
-        ├── [static html ux]
-        ├── producer={producer-name}/
-        │   ├── metadata.json
-        │   └── dataset={dataset-name}/
-        │       └── metadata.json
-        └── consumer={consumer-name}/
-            ├── metadata.json
-            └── [infra declarations, approvals and other documentation]
+    Producers and Consumers use a MarketClient to interact with the market.
     """
 
     market_data: Output[dict[str, str]]
@@ -110,7 +77,6 @@ class Market(ComponentResource):
             props={},
             opts=opts,
         )
-        # self.client = client_factory.get(args.market_type)
 
     @classmethod
     def get_market_metadata_key(cls, name):
@@ -121,6 +87,10 @@ class Market(ComponentResource):
 
 
 class MarketFactory:
+    """
+    A market factory provides flexible construction of markets and market clients.
+    """
+
     _clients: dict[str, type[MarketClient]]
     _components: dict[str, type[Market]]
     _configurations: dict[str, Any]

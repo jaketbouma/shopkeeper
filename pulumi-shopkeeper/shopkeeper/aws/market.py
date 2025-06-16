@@ -1,11 +1,9 @@
-# ruff: noqa: F401
 import hashlib
 import logging
-from dataclasses import asdict, dataclass
-from typing import Any, Optional, Type, TypedDict, TypeVar
+from dataclasses import dataclass
+from typing import Any, Optional, TypedDict
 
 import boto3
-import yaml
 from pulumi import Input, Output, ResourceOptions
 from pulumi_aws import s3 as pulumi_s3
 from serde import serde, to_dict
@@ -15,31 +13,25 @@ from shopkeeper.base_market import (
     Market,
     MarketClient,
     MarketMetadataV1,
-    SerializationMixin,
 )
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-TSerializable = TypeVar("TSerializable", bound=SerializationMixin)
-
 
 class AwsMarketV1Args(TypedDict):
     """
-    Properties to declare this market.
+    Arguments required to declare an AwsMarketV1
     """
 
     metadata: MarketMetadataV1
-
-    # implementation specific args
-    bucket_prefix: Optional[Input[str]]
+    bucket_prefix: Input[str]
 
 
 class AwsMarketV1Config(TypedDict):
     """
-    Declarations of resources in this marketplace must provide
-    these inputs under properties.market
+    Arguments required to initialize an AwsMarketClient
     """
 
     market_type: Input[str]
@@ -52,20 +44,26 @@ class AwsMarketV1Config(TypedDict):
 @dataclass(kw_only=True)
 class AwsMarketV1Data:
     """
-    Data that is serialized back and forth to storage.
-    We avoid Pulumi Input/Outputs here.
+    Market data that is serialized to storage by the Market component declaration,
+    and deserialized back from storage by the Market Client.
     """
 
     market_type: str
     name: str
-    metadata: dict[str, str]
-    configuration: dict[str, Any]
+    metadata: dict[str, str]  # MarketMetadataV1
+    configuration: dict[str, Any]  # AwsMarketConfigV1
     region: str
     bucket: str
     bucket_arn: str
 
 
 class AwsMarketV1(Market):
+    """
+    A Market implemented on AWS, using standard file-based metadata storage
+
+    To connect to this market, initialize an AwsMarketV1Client using AwsMarketV1Config.
+    """
+
     # need to explicitly mention these for languages other than python
     market_data: Output[dict[str, str]]
     market_configuration: Output[dict[str, str]]
@@ -123,11 +121,11 @@ class AwsMarketV1(Market):
 
         # declare the metadata file on object storage as a json file
         pulumi_s3.BucketObjectv2(
-            f"{name}-metadata-json",
+            f"{name}-metadata-yaml",
             bucket=bucket.bucket,
             key=filename,
             content=market_data_serialized,
-            content_type="text/json",
+            content_type="text/yaml",
             opts=ResourceOptions(parent=bucket),
             etag=etag,
         )
@@ -147,6 +145,10 @@ class AwsMarketV1(Market):
 
 
 class AwsMarketV1Client(MarketClient):
+    """
+    A client to connect to and interact with an AwsMarketV1 Market
+    """
+
     market_configuration: Output[AwsMarketV1Config]
     market_data: Output[AwsMarketV1Data]
 
@@ -172,8 +174,12 @@ class AwsMarketV1Client(MarketClient):
         name: str,
         opts: Optional[ResourceOptions] = None,
     ) -> Output[dict[str, Any]]:
+        """
+        Creates a bucket object called name with data and an etag at key.
+        data must be a dataclass that is serializable with pyserde.
+        """
         # serialize to yaml and calculate Etag
-        data_serialized: Output[str] = data.apply(lambda m: m.to_yaml())
+        data_serialized: Output[str] = data.apply(to_yaml)
         etag: Output[str] = data_serialized.apply(
             lambda s: hashlib.md5(s.encode()).hexdigest()
         )
@@ -188,11 +194,14 @@ class AwsMarketV1Client(MarketClient):
             etag=etag,
         )
 
-        output_data = data.apply(lambda x: x.to_dict())
+        output_data = data.apply(to_dict)
         return output_data
 
 
 def _read_s3_file(region: str, bucket: str, key: str) -> str:
+    """
+    Read and decode an object from S3
+    """
     s3 = boto3.client("s3", region_name=region)
     key = key.lstrip("/")
     logger.info(f"fetching {bucket}/{key}")
