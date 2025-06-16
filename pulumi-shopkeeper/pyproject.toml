@@ -6,11 +6,13 @@ authors = ["Jake Bouma"]
 license = "MIT"
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.12"
 pulumi = "^3.167.0"
 pulumi-aws = "^6.79.2"
 boto3 = "^1.38.8"
 pulumi-std = "^2.2.0"
+pyserde = "^0.24.0"
+dacite = "^1.9.2"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3"
@@ -18,6 +20,11 @@ debugpy = "^1.8.14"
 ruff = "^0.11.9"
 pycodestyle = "^2.13.0"
 autopep8 = "^2.3.2"
+pulumi = {path = "/workspaces/pulumi/sdk/python", develop = true }
+poethepoet = "^0.34.0"
+pytest-cov = "^6.1.1"
+coverage = "^7.8.2"
+pytest-xdist = "^3.7.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -30,7 +37,7 @@ filterwarnings = [
     "ignore::DeprecationWarning:aws.*:"
 ]
 testpaths = [
-    "tests"
+    "tests",
 ]
 
 [tool.ruff]
@@ -41,3 +48,35 @@ docstring-code-format = true
 
 [tool.ruff.lint.pycodestyle]
 max-doc-length = 88
+
+[tool.poetry.requires-plugins]
+poethepoet = { version = "~0.34.0", extras = ["poetry_plugin"]}
+
+[tool.poe.tasks]
+nothing = "echo '🫙🫙🫙🫙🫙'"
+clean = ["clean-directories", "clean-test-stacks"]
+test = ["clean", "test"]
+
+[tool.poe.tasks.test-programs]
+help = "⚡ Run all test programs in parallel"
+cmd = "poetry run pytest -n auto tests/test_programs.py"
+
+[tool.poe.tasks.clean-test-stacks]
+help = "🔥 Destroy stacks created in pytests"
+cmd = "python tests/destroy_test_stacks.py"
+
+[tool.poe.tasks.pytest]
+help = "🔎 Run pytest with coverage"
+cmd = "poetry run pytest"
+
+[tool.poe.tasks.clean-directories]
+help = "🧹 Remove pytest cache, generated files, ..."
+cmd = """
+rm -rf ./.pytest_cache
+       ./shopkeeper/generated
+       ./**/*.pyc
+       ./**/__pycache__
+"""
+
+[tool.poe.poetry_hooks]
+pre_build  = "nothing"

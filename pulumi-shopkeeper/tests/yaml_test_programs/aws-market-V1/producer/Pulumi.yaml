@@ -1,0 +1,31 @@
+# Set up the markets
+runtime: yaml
+name: test-aws
+description: Pete deploys all his pumpkins from here.
+packages:
+  pulumi-shopkeeper:
+    source: ../../../../../pulumi-shopkeeper
+    version: 0.0.0
+
+resources:
+  # Reference the market stack
+  marketStack:
+    type: pulumi:pulumi:StackReference
+    properties:
+      name: "/test-aws/aws_test_market"
+  # declare the producer
+  dev:
+    type: pulumi-shopkeeper:AwsProducerV1
+    properties:
+      metadata:
+        name: "Pete the Pumpkin Producer"
+        description: Pumpkin Market (Prod)
+      market: 
+        bucket: ${marketStack.outputs["bucket"]}
+        marketMetadataKey: ${marketStack.outputs["marketMetadataKey"]}
+        marketType: ${marketStack.outputs["marketType"]}
+        region: ${marketStack.outputs["region"]}
+
+outputs:
+  producerData: ${dev.producerData}
+  someMarketConfiguration: ${marketStack.outputs["someMarketConfiguration"]}
