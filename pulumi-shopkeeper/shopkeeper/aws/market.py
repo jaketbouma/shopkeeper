@@ -42,6 +42,7 @@ class AwsMarketV1Config(TypedDict):
     these inputs under properties.market
     """
 
+    market_type: Input[str]
     bucket: Input[str]
     region: Input[str]
     market_metadata_key: Input[str]
@@ -161,7 +162,7 @@ class AwsMarketV1Client(MarketClient):
         self.market_data = Output.all(
             region=market_configuration["region"],
             bucket=market_configuration["bucket"],
-            market_metadata_key=market_configuration["market_metadata_key"],
+            key=market_configuration["market_metadata_key"],
         ).apply(_load_market)
 
     def declare_resource_metadata(
@@ -189,14 +190,6 @@ class AwsMarketV1Client(MarketClient):
 
         output_data = data.apply(lambda x: x.to_dict())
         return output_data
-
-    def read_resource_metadata(
-        self, DataType: SerializationMixin, key
-    ) -> SerializationMixin:
-        content = _read_s3_file(
-            region=self.market_data.region, bucket=self.market_data.bucket, key=key
-        )
-        return DataType.from_yaml(content)
 
 
 def _read_s3_file(region: str, bucket: str, key: str) -> str:

@@ -150,7 +150,7 @@ class MarketFactory:
     def get_configuration(self, market_type: str):
         return self._configurations[market_type]
 
-    def configure_client(self, market_configuration: Any) -> MarketClient:
-        MC = self._clients[market_configuration.market_type]
-        mc = MC(market_configuration)
+    def configure_client(self, market_type, market_configuration) -> MarketClient:
+        MC = self._clients[market_type]
+        mc = MC(market_configuration=market_configuration)
         return mc

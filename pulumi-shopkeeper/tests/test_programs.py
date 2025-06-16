@@ -5,18 +5,18 @@ import os
 import pytest
 from pulumi import automation as auto
 
-logger = logging.getLogger("fishmarket-test")
+logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 
 yaml_programs = [
     {
-        "stack_name": "pytest-fishmarket",
-        "program_folder": "yaml_test_programs/fishmarket",
+        "stack_name": "aws-market-market",
+        "program_folder": "yaml_test_programs/aws-veg-market/market",
     },
     {
-        "stack_name": "pytest-fishermanFred",
-        "program_folder": "yaml_test_programs/fishermanfred",
+        "stack_name": "aws-market-producer",
+        "program_folder": "yaml_test_programs/aws-veg-market/producer",
     },
 ]
 

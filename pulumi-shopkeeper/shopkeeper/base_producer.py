@@ -1,27 +1,24 @@
 import logging
-from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any, Optional, TypedDict
 
 from pulumi import ComponentResource, Input, Output, ResourceOptions
 
-from shopkeeper.base_market import MarketClient, SerializationMixin
 from shopkeeper.factory import market_factory
 
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class ProducerMetadataV1(SerializationMixin):
+class ProducerMetadataV1(TypedDict):
     name: Input[str]
     description: Input[str]
-    version: Optional[str] = "v1"
+    version: Optional[str]
 
 
 class Producer(ComponentResource):
     producer_data: Output[Any]
     metadata_version: str = "v1"
-    safe_args: Any
-    market_client: MarketClient
+    market_client: Any
+    market_type: str
 
     def __init__(
         self,
@@ -29,15 +26,8 @@ class Producer(ComponentResource):
         args: Any,
         opts: Optional[ResourceOptions] = None,
     ) -> None:
-        # if args is a dict coming from pulumi yaml, then deserialize
-        args_type = self.__class__.__init__.__annotations__["args"]
-        if isinstance(args, dict):
-            self.safe_args = args_type.from_dict(args)
-        elif isinstance(args, args_type):
-            self.safe_args = args
-
         super().__init__(
-            f"pulumi-shopkeeper:index:{self.safe_args.market.market_type}Producer",
+            f"pulumi-shopkeeper:index:{self.__class__.__name__}",
             name,
             props={},
             opts=opts,
@@ -45,5 +35,5 @@ class Producer(ComponentResource):
 
         # configure client
         self.market_client = market_factory.configure_client(
-            market_configuration=self.safe_args.market
+            market_type=self.market_type, market_configuration=args["market"]
         )

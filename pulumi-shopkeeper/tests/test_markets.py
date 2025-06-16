@@ -4,6 +4,7 @@ from typing import Any
 
 import pulumi
 import pytest
+from pulumi.runtime.sync_await import _sync_await
 
 from shopkeeper.aws.market import AwsMarketV1Args, MarketMetadataV1
 from shopkeeper.factory import market_factory
@@ -97,4 +98,13 @@ def test_market_clients(some_market_outputs, some_market_inputs):
         **some_market_outputs["someMarketConfiguration"]
     )
     client = MC(market_configuration=configuration)
-    assert client.market_data is not None
+
+    def check_client_market_data(d):
+        assert d is not None
+        assert d.market_type == some_market_inputs["market_type"]
+        assert d.name == some_market_inputs["name"]
+        assert d.bucket is not None
+        assert d.region is not None
+
+    checks = client.market_data.apply(check_client_market_data)
+    _sync_await(checks._future)

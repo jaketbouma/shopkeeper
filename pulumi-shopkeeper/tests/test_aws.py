@@ -3,8 +3,9 @@ import logging
 import pulumi
 import pytest
 
-from shopkeeper.aws.market import AwsMarketV1Args
-from shopkeeper.aws.producer import AwsProducerV1, AwsProducerV1Args
+from shopkeeper.aws.market import AwsMarketV1Args, MarketMetadataV1
+from shopkeeper.aws.producer import AwsMarketV1Config, AwsProducerV1, AwsProducerV1Args
+from shopkeeper.base_producer import ProducerMetadataV1
 from shopkeeper.factory import market_factory
 
 from .test_programs import pulumi_up_for_test_programs
@@ -19,9 +20,12 @@ def some_market_outputs(pytestconfig) -> dict[str, str]:
     market_type = "AwsMarketV1"
     name = "producer-test-market"
     args = AwsMarketV1Args(
-        name="pytest-some-market",
-        description="pytest market",
-        bucket_prefix="pytest-some-market",
+        metadata=MarketMetadataV1(
+            description="pytest market",
+            color="red",
+            environment="dev",
+        ),
+        bucket_prefix="pytest-some-red-market",
     )
     cache_key = f"{market_type}/{name}"
 
@@ -51,6 +55,11 @@ def some_market_outputs(pytestconfig) -> dict[str, str]:
     return outputs
 
 
+def test_aws_market(some_market_outputs):
+    assert "someMarketConfiguration" in some_market_outputs
+    assert "someMarketData" in some_market_outputs
+
+
 def test_aws_producer(some_market_outputs):
     name = "pytest-aws-producer"
     producer_type = "AwsProducerV1"
@@ -61,9 +70,10 @@ def test_aws_producer(some_market_outputs):
         producer = AwsProducerV1(
             name="test-producer",
             args=AwsProducerV1Args(
-                name=name,
-                description="pytest aws producer",
-                market=AwsMarketV1Configuration(**market_configuration),
+                metadata=ProducerMetadataV1(
+                    name="test-producer", description="Some test producer"
+                ),
+                market=AwsMarketV1Config(**market_configuration),
             ),
         )
         pulumi.export("someProducerData", producer.producer_data)
@@ -83,7 +93,7 @@ def test_aws_producer(some_market_outputs):
 def aws_test_market_output(pytestconfig):
     key = "someMarketData"
     stack_name = "aws_test_market"
-    test_program_folder = "yaml_test_programs/aws-veg-market/market"
+    test_program_folder = "yaml_test_programs/aws-market-V1/market"
 
     # check cache
     outputs = pytestconfig.cache.get(key, None)
@@ -111,7 +121,7 @@ def test_yaml_producer(aws_test_market_output):
     stack_name = "aws_test_producer"
     up_result = pulumi_up_for_test_programs(
         stack_name=stack_name,
-        test_program_folder="yaml_test_programs/aws-veg-market/producer",
+        test_program_folder="yaml_test_programs/aws-market-V1/producer",
     )
     output = up_result.outputs["producerData"]
     assert output is not None
